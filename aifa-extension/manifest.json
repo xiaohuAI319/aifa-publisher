@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Aifa Simple Publisher",
+  "version": "0.1.0",
+  "description": "接收自定义网页任务，在知乎写作页内自动填充标题与正文，可选触发自动发布。",
+  "permissions": [],
+  "host_permissions": [
+    "https://zhuanlan.zhihu.com/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://cloud1-2galtebofd65ac99-1360656182.tcloudbaseapp.com/*",
+      "https://aifa.aixiaohu.top/*"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://zhuanlan.zhihu.com/*"],
+      "js": ["content-zhihu.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

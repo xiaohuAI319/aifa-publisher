@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>文章编辑 - 一键发布到知乎</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap">
+  <script src="./assets/tinymce/tinymce.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 40%);
+      color: #1f2329;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(22, 119, 255, 0.12);
+      color: #1677ff;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(15, 37, 64, 0.08);
+      padding: 20px 24px 24px 24px;
+      border: 1px solid rgba(22, 119, 255, 0.08);
+    }
+    .title {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      border: 1px solid #d0d7de;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .title:focus {
+      border-color: #1677ff;
+      box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.15);
+    }
+    #editor {
+      margin-top: 16px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #4e5969;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 22px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(22, 119, 255, 0.3);
+    }
+    .hint {
+      flex: 1;
+      min-width: 240px;
+      font-size: 13px;
+      color: #86909c;
+      line-height: 1.6;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .header h1 { font-size: 24px; }
+      .card { padding: 20px; }
+      .actions { flex-direction: column; align-items: stretch; }
+      button.primary { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>文章编辑 / 发布面板</h1>
+      <span class="badge">TinyMCE · Chrome 扩展</span>
+    </div>
+    <div class="card">
+      <input id="titleInput" class="title" placeholder="请输入文章标题" />
+      <textarea id="editor"></textarea>
+      <div class="actions">
+        <label class="toggle">
+          <input type="checkbox" id="autoPublish" checked />
+          自动点击发布
+        </label>
+        <button class="primary" id="publishBtn">一键发布到知乎</button>
+        <p class="hint">
+          提示：首次使用需打开 Chrome <strong>开发者模式</strong>，加载扩展目录。若未自动发布，请返回编辑器重试。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const EDITOR_ID = 'editor';
+
+    tinymce.init({
+      selector: `#${EDITOR_ID}`,
+      height: 320,
+      menubar: false,
+      language: 'zh_CN',
+      plugins: 'lists link image table code autoresize',
+      toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code',
+      language_url: './assets/tinymce/langs/zh_CN.v2.js?v=20241022',
+      automatic_uploads: false,
+      paste_data_images: true,
+      convert_urls: false,
+      content_style: 'body { line-height: 1.7; font-size: 16px; font-family: \"Noto Sans SC\", system-ui; }'
+    });
+
+    function createTaskPayload() {
+      const title = document.getElementById('titleInput').value.trim();
+      const autoPublish = document.getElementById('autoPublish').checked;
+      const editorInstance = tinymce.get(EDITOR_ID);
+      const html = editorInstance ? editorInstance.getContent({ format: 'html' }) : '';
+
+      if (!title) {
+        alert('请先填写标题');
+        throw new Error('标题为空');
+      }
+      if (!html && !confirm('正文为空，是否继续只发布标题？')) {
+        throw new Error('正文为空且用户取消');
+      }
+
+      const taskId = `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+      return {
+        type: 'AIFA_TASK',
+        platform: 'zhihu',
+        taskId,
+        autoPublish,
+        payload: { title, content: html }
+      };
+    }
+
+    function openZhihuWritePage() {
+      const targetWindow = window.open('https://zhuanlan.zhihu.com/write#aifa', '_blank');
+      if (!targetWindow) {
+        alert('请允许浏览器弹出窗口或手动打开知乎写作页');
+        throw new Error('无法打开知乎页面');
+      }
+      return targetWindow;
+    }
+
+    function setupMessageBridge(targetWindow, task) {
+      const expectedTaskId = task.taskId;
+      let handshakeReceived = false;
+      let taskCompleted = false;
+      const handshakeMessage = 'AIFA_PUBLISH_REQUEST';
+
+      let handshakeRetryTimer = null;
+      let handshakeTimeoutTimer = null;
+      let responseTimeoutTimer = null;
+
+      const cleanup = () => {
+        if (handshakeRetryTimer) {
+          clearTimeout(handshakeRetryTimer);
+          handshakeRetryTimer = null;
+        }
+        if (handshakeTimeoutTimer) {
+          clearTimeout(handshakeTimeoutTimer);
+          handshakeTimeoutTimer = null;
+        }
+        if (responseTimeoutTimer) {
+          clearTimeout(responseTimeoutTimer);
+          responseTimeoutTimer = null;
+        }
+        window.removeEventListener('message', onMessage);
+      };
+
+      const onMessage = (event) => {
+        if (event.data?.type === 'AIFA_TASK_RESULT') {
+          if (event.data.taskId !== expectedTaskId) {
+            return;
+          }
+          taskCompleted = true;
+          const { status, url, error } = event.data;
+          if (status === 'success') {
+            alert('发布成功：' + (url || '已保存至知乎草稿箱'));
+          } else {
+            alert('发布失败：' + (error || '未知错误'));
+          }
+          cleanup();
+          return;
+        }
+
+        if (event.source !== targetWindow) return;
+
+        if (event.data?.type === 'AIFA_READY' && event.data.platform === 'zhihu') {
+          handshakeReceived = true;
+          if (handshakeRetryTimer) {
+            clearTimeout(handshakeRetryTimer);
+            handshakeRetryTimer = null;
+          }
+          if (handshakeTimeoutTimer) {
+            clearTimeout(handshakeTimeoutTimer);
+            handshakeTimeoutTimer = null;
+          }
+
+          setTimeout(() => {
+            try {
+              targetWindow.postMessage(task, '*');
+              responseTimeoutTimer = setTimeout(() => {
+                if (taskCompleted) return;
+                alert('未收到扩展响应，请确认扩展已启用并重试');
+                cleanup();
+              }, 30000);
+            } catch (error) {
+              cleanup();
+            }
+          }, 400);
+        }
+      };
+
+      window.addEventListener('message', onMessage);
+
+      try {
+        targetWindow.postMessage(handshakeMessage, '*');
+      } catch (e) {
+        alert('无法打开或与发布页面通信，请检查弹窗是否被拦截');
+        cleanup();
+        return;
+      }
+
+      handshakeRetryTimer = setTimeout(() => {
+        if (handshakeReceived) return;
+        try {
+          targetWindow.postMessage(handshakeMessage, '*');
+        } catch (error) {
+          throw error;
+        }
+      }, 3000);
+
+      handshakeTimeoutTimer = setTimeout(() => {
+        if (handshakeReceived) return;
+        alert('未收到扩展握手，请确认扩展已启用并重试');
+        cleanup();
+      }, 10000);
+    }
+
+    document.getElementById('publishBtn').addEventListener('click', () => {
+      try {
+        const task = createTaskPayload();
+        const targetWindow = openZhihuWritePage();
+        setupMessageBridge(targetWindow, task);
+      } catch (error) {
+        throw error;
+      }
+    });
+  </script>
+</body>
+</html>

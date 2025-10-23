@@ -1,0 +1,7 @@
+# Local environment overrides (keep sensitive info out of git)
+config/local.env.json
+config/*.local.json
+
+# Common secret formats
+.env
+.env.*
