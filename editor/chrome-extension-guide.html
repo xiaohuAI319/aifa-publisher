@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Chrome 插件安装指引 - AIFA 发布助手</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 40%);
+      color: #1f2329;
+    }
+    .wrapper {
+      max-width: 880px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid rgba(22, 119, 255, 0.08);
+      box-shadow: 0 12px 36px rgba(15, 37, 64, 0.08);
+      padding: 40px 46px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 600;
+      color: #162447;
+    }
+    header a.back-link {
+      font-size: 14px;
+      color: #1677ff;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(22, 119, 255, 0.1);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    header a.back-link::before {
+      content: '\2190';
+    }
+    header a.back-link:hover {
+      background: rgba(22, 119, 255, 0.16);
+      transform: translateX(-2px);
+    }
+    .download-card {
+      border: 1px solid rgba(212, 56, 13, 0.24);
+      border-radius: 16px;
+      background: rgba(212, 56, 13, 0.04);
+      padding: 28px 32px;
+      margin-bottom: 40px;
+    }
+    .download-card h2 {
+      margin: 0 0 12px;
+      color: #d4380d;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .download-card p {
+      margin: 0 0 24px;
+      color: #4e5969;
+      line-height: 1.8;
+    }
+    .download-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: none;
+      color: #ffffff;
+      background: linear-gradient(135deg, #d4380d 0%, #fa541c 100%);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .download-button::before {
+      content: '\2B07';
+      font-size: 18px;
+    }
+    .download-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(212, 56, 13, 0.35);
+    }
+    nav {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    nav a {
+      display: block;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: #f5f7fb;
+      color: #1f2329;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    nav a:hover {
+      background: #e6f0ff;
+      transform: translateY(-2px);
+    }
+    section {
+      margin-bottom: 48px;
+    }
+    section:last-of-type {
+      margin-bottom: 0;
+    }
+    section h2 {
+      font-size: 24px;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    section h2 span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .step-description {
+      margin: 0 0 20px;
+      color: #4e5969;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    .step-media {
+      margin: 24px 0 12px;
+      text-align: center;
+    }
+    .step-media img {
+      max-width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(22, 119, 255, 0.18);
+      box-shadow: 0 14px 32px rgba(14, 42, 86, 0.08);
+    }
+    .step-media figcaption {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6f7785;
+      line-height: 1.6;
+    }
+    .illustration {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px dashed rgba(22, 119, 255, 0.25);
+      background: #f8fbff;
+      padding: 22px;
+      color: #4e5969;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .illustration strong {
+      color: #1677ff;
+    }
+    ul.checklist {
+      margin: 0;
+      padding-left: 20px;
+      color: #4e5969;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    ul.checklist li {
+      margin-bottom: 10px;
+    }
+    .tip {
+      border-left: 4px solid #1677ff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: rgba(22, 119, 255, 0.06);
+      color: #1f4068;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-top: 18px;
+    }
+    @media (max-width: 720px) {
+      body {
+        padding: 18px;
+      }
+      .wrapper {
+        padding: 28px 22px;
+      }
+      header h1 {
+        font-size: 26px;
+      }
+      .download-card {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>Chrome 插件安装指引</h1>
+      <a class="back-link" href="./index.html">返回编辑器</a>
+    </header>
+
+    <div class="download-card" id="download">
+      <h2>立刻下载发布助手插件</h2>
+      <p>该插件用于连接 AIFA 发布助手与知乎写作页面，实现一键填充与发布。请点击下方按钮获取最新版本的扩展压缩包。</p>
+      <a class="download-button" href="./assets/aifa-extension.zip" download>下载 Chrome 插件 ZIP 包</a>
+      <p class="tip">若按钮无法下载，请右键选择“链接另存为”，或联系团队获取离线包。</p>
+    </div>
+
+    <nav>
+      <a href="#step1">1. 安装或更新 Chrome 浏览器</a>
+      <a href="#step2">2. 开启开发者模式</a>
+      <a href="#step3">3. 导入并启用插件</a>
+      <a href="#step4">4. 验证安装效果</a>
+    </nav>
+
+    <section id="step1">
+      <h2><span>1</span>安装或更新 Chrome 浏览器</h2>
+      <p class="step-description">插件依赖桌面版 Chrome 浏览器。请确认您使用的是最新版，以便顺利开启开发者模式并加载扩展。</p>
+      <div class="illustration">
+        <strong>操作步骤：</strong>
+        <ul class="checklist">
+          <li>访问 Google 官方下载站：<a href="https://www.google.cn/chrome/" target="_blank" rel="noopener">https://www.google.cn/chrome/</a></li>
+          <li>下载后按照系统提示完成安装；若已安装，请进入 <em>设置 &gt; 关于 Chrome</em> 检查并更新到最新版本。</li>
+          <li>国内网络环境若无法访问，可从各大应用商店或者软件站下载安装包。</li>
+        </ul>
+      </div>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器226.png" alt="Chrome 官方下载页面示意">
+        <figcaption>图示：访问 Google Chrome 官方站点，下载安装或更新浏览器</figcaption>
+      </figure>
+    </section>
+
+    <section id="step2">
+      <h2><span>2</span>开启 Chrome 开发者模式</h2>
+      <p class="step-description">要加载本地扩展，必须先打开 Chrome 扩展管理界面的开发者模式。</p>
+      <div class="illustration">
+        <strong>建议操作：</strong>
+        <ul class="checklist">
+          <li>在地址栏输入 <code>chrome://extensions/</code> 并按回车。</li>
+          <li>在页面右上角找到“开发者模式”开关，将其打开。</li>
+          <li>若看不到开关，可通过 <em>菜单 &gt; 更多工具 &gt; 扩展程序</em> 打开同一页面。</li>
+        </ul>
+      </div>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器402.png" alt="Chrome 扩展程序页面开启开发者模式">
+        <figcaption>图示：在扩展程序页右上角开启“开发者模式”</figcaption>
+      </figure>
+      <div class="tip">打开开发者模式后，页面右上角会显示 “加载已解压的扩展程序” 按钮，这就是后续导入插件的入口。</div>
+    </section>
+
+    <section id="step3">
+      <h2><span>3</span>导入并启用插件</h2>
+      <p class="step-description">从压缩包中解压到电脑本地，随后通过扩展程序页面加载。</p>
+      <div class="illustration">
+        <strong>导入步骤：</strong>
+        <ul class="checklist">
+          <li>将下载得到的 <code>aifa-extension.zip</code> 解压到一个易于记忆的位置，例如桌面或文档目录。</li>
+          <li>在 <code>chrome://extensions/</code> 页面点击 “加载已解压的扩展程序”。</li>
+          <li>在弹出的文件夹选择窗口中，指定刚解压的 <code>aifa-extension</code> 文件夹，然后确认。</li>
+          <li>导入完成后，确保扩展卡片右下角的开关处于开启状态。</li>
+        </ul>
+      </div>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器606.png" alt="解压插件压缩包">
+        <figcaption>图示：将下载的 aifa-extension.zip 解压到本地目录</figcaption>
+      </figure>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器650.png" alt="Chrome 扩展页加载已解压的扩展程序">
+        <figcaption>图示：点击“加载已解压的扩展程序”按钮</figcaption>
+      </figure>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器697.png" alt="选择解压后的 aifa-extension 文件夹">
+        <figcaption>图示：在系统文件选择窗口中指向 aifa-extension 文件夹</figcaption>
+      </figure>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器725.png" alt="Chrome 扩展卡片显示已启用">
+        <figcaption>图示：确保扩展卡片的开关处于“已启用”状态</figcaption>
+      </figure>
+    </section>
+
+    <section id="step4">
+      <h2><span>4</span>验证安装效果</h2>
+      <p class="step-description">完成导入后，请按以下方法验证扩展是否已正确启用。</p>
+      <div class="illustration">
+        <strong>检查要点：</strong>
+        <ul class="checklist">
+          <li>Chrome 地址栏右侧出现 “AIFA 发布助手” 图标，点击后能看到版本号与快捷说明。</li>
+        </ul>
+      </div>
+      <figure class="step-media">
+        <img src="./assets/images/chrome-guide/安装或更新 Chrome 浏览器.files/安装或更新 Chrome 浏览器812.png" alt="浏览器工具栏显示 AIFA 发布助手图标">
+        <figcaption>图示：扩展启用后，在工具栏可见 AIFA 发布助手图标</figcaption>
+      </figure>
+      <div class="tip">若以上未通过，请重新检查开发者模式是否开启、扩展开关是否打开，或通过浏览器右上角扩展图标选择“管理扩展程序”重新加载。</div>
+    </section>
+  </div>
+</body>
+</html>

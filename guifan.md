@@ -16,3 +16,9 @@
 - 编辑页代码更新后使用 CloudBase `uploadFiles` 同步至 `simple-publisher/editor` 目录。
 - 浏览器扩展改动需在 `chrome://extensions` 页面执行“更新”或重新加载解压目录，确保最新 `manifest.json` 与 `content-zhihu.js` 生效。
 - 发布前建议在 Chrome 隐身模式下访问 `https://aifa.aixiaohu.top/simple-publisher/editor/` 进行回归验证。
+
+## 静态资源与指引页面（2025-10-23）
+- Chrome 插件指引页所用截图统一放置在 `editor/assets/images/chrome-guide/`，命名格式为 `step-XX.png`（两位序号）。
+- 图文内容以 Word 导出 HTML 为来源时，需确认排序与指引步骤一致，避免遗漏或重复。
+- 指引页引用图片时使用相对路径 `./assets/images/chrome-guide/step-XX.png`，并为每张图片提供准确的 `alt` 与说明文字。
+- 每次更新指引文案或新增图片后，务必重新上传 `editor/` 目录至 CloudBase `simple-publisher/editor`，保持线上版本最新。

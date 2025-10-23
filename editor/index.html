@@ -55,6 +55,29 @@
       font-size: 13px;
       font-weight: 500;
     }
+    .download-link {
+      color: #d4380d;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid rgba(212, 56, 13, 0.35);
+      border-radius: 999px;
+      padding: 6px 16px;
+      background: rgba(212, 56, 13, 0.08);
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .download-link::before {
+      content: '\26A0';
+      font-size: 16px;
+    }
+    .download-link:hover {
+      background: rgba(212, 56, 13, 0.16);
+      border-color: rgba(212, 56, 13, 0.55);
+      transform: translateY(-1px);
+    }
     .card {
       background: #ffffff;
       border-radius: 16px;
@@ -162,7 +185,7 @@
   <div class="container">
     <div class="header">
       <h1>文章编辑 / 发布面板</h1>
-      <span class="badge">TinyMCE · Chrome 扩展</span>
+      <a class="download-link" href="./chrome-extension-guide.html" target="_blank" rel="noopener noreferrer">重要：Chrome 插件下载</a>
     </div>
     <div class="card">
       <input id="titleInput" class="title" placeholder="请输入文章标题" />
@@ -176,7 +199,7 @@
         </label>
         <button class="primary" id="publishBtn">一键发布到知乎</button>
         <p class="hint">
-          提示：首次使用需打开 Chrome <strong>开发者模式</strong>，加载扩展目录。若未自动发布，请返回编辑器重试。
+          提示：首次使用详见右上角 <strong>“重要：Chrome 插件下载”</strong> 指引。
         </p>
       </div>
     </div>
