@@ -18,10 +18,19 @@
       padding: 24px;
       background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 40%);
       color: #1f2329;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
     .container {
       max-width: 960px;
       margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 48px);
     }
     .header {
       display: flex;
@@ -50,8 +59,12 @@
       background: #ffffff;
       border-radius: 16px;
       box-shadow: 0 12px 32px rgba(15, 37, 64, 0.08);
-      padding: 20px 24px 24px 24px;
+      padding: 32px 32px 32px 32px;
       border: 1px solid rgba(22, 119, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
     .title {
       width: 100%;
@@ -66,15 +79,45 @@
       border-color: #1677ff;
       box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.15);
     }
-    #editor {
+    .editor-shell {
       margin-top: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #d0d7de;
+      background: #ffffff;
+      min-height: 0;
+    }
+    .editor-shell .tox {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .editor-shell .tox .tox-sidebar-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+    .editor-shell .tox .tox-edit-area {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    .editor-shell .tox .tox-edit-area__iframe {
+      height: 100% !important;
     }
     .actions {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 16px;
-      margin-top: 18px;
+      margin-top: auto;
+      padding-top: 24px;
+      margin-inline: -4px;
+      padding-inline: 4px;
     }
     .toggle {
       display: inline-flex;
@@ -123,7 +166,9 @@
     </div>
     <div class="card">
       <input id="titleInput" class="title" placeholder="请输入文章标题" />
-      <textarea id="editor"></textarea>
+      <div class="editor-shell">
+        <textarea id="editor"></textarea>
+      </div>
       <div class="actions">
         <label class="toggle">
           <input type="checkbox" id="autoPublish" checked />
@@ -142,10 +187,15 @@
 
     tinymce.init({
       selector: `#${EDITOR_ID}`,
-      height: 320,
+      height: '100%',
+      min_height: 0,
       menubar: false,
       language: 'zh_CN',
+      promotion: false,
+      statusbar: false,
       plugins: 'lists link image table code autoresize',
+      autoresize_min_height: 0,
+      autoresize_bottom_margin: 0,
       toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code',
       language_url: './assets/tinymce/langs/zh_CN.v2.js?v=20241022',
       automatic_uploads: false,
