@@ -233,7 +233,6 @@
     .channel-meta {
       display: flex;
       flex-direction: column;
-      gap: 4px;
       min-width: 0;
     }
     .channel-name {
@@ -241,38 +240,41 @@
       font-weight: 600;
       color: #1f2329;
     }
-    .channel-desc {
-      font-size: 12px;
-      color: #98a2b3;
-      line-height: 1.5;
-    }
     .channel-card__actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+    }
+    .channel-body__header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 12px;
     }
     .channel-refresh {
-      border: 1px solid rgba(22, 119, 255, 0.18);
-      background: rgba(22, 119, 255, 0.08);
+      border: 1px solid rgba(22, 119, 255, 0.22);
+      background: rgba(22, 119, 255, 0.12);
       color: #165996;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 12px;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .channel-refresh:hover:not([disabled]) {
-      background: rgba(22, 119, 255, 0.16);
-      border-color: rgba(22, 119, 255, 0.35);
+      background: rgba(22, 119, 255, 0.18);
+      border-color: rgba(22, 119, 255, 0.42);
       color: #0f1f4b;
+      box-shadow: 0 6px 16px rgba(22, 119, 255, 0.18);
     }
     .channel-refresh[disabled] {
       opacity: 0.6;
       cursor: wait;
+      box-shadow: none;
     }
     .channel-toggle {
       position: relative;
@@ -447,11 +449,9 @@
                 <div class="channel-icon channel-icon--zhihu">知</div>
                 <div class="channel-meta">
                   <span class="channel-name">知乎专栏</span>
-                  <span class="channel-desc">已对接 Chrome 扩展，支持自动发布</span>
                 </div>
               </div>
               <div class="channel-card__actions">
-                <button type="button" class="channel-refresh" data-channel="zhihu">刷新</button>
                 <label class="channel-toggle">
                   <input type="checkbox" class="channel-toggle-input" data-channel="zhihu" />
                   <span class="toggle-slider"></span>
@@ -459,6 +459,9 @@
               </div>
             </div>
             <div class="channel-body" data-channel="zhihu" hidden>
+              <div class="channel-body__header">
+                <button type="button" class="channel-refresh" data-channel="zhihu">刷新配置</button>
+              </div>
               <div class="config-field">
                 <label for="zhihuAccountSelect">发布账号</label>
                 <select id="zhihuAccountSelect">
@@ -482,11 +485,9 @@
                 <div class="channel-icon channel-icon--placeholder">头</div>
                 <div class="channel-meta">
                   <span class="channel-name">今日头条</span>
-                  <span class="channel-desc">配置开发中，暂不可用</span>
                 </div>
               </div>
               <div class="channel-card__actions">
-                <button type="button" class="channel-refresh" data-channel="toutiao" disabled>刷新</button>
                 <label class="channel-toggle">
                   <input type="checkbox" class="channel-toggle-input" data-channel="toutiao" disabled />
                   <span class="toggle-slider"></span>
@@ -494,7 +495,7 @@
               </div>
             </div>
             <div class="channel-placeholder">
-              今日头条发布选项尚未开放，计划包含：头条号选择、封面样式、同步视频等。
+              今日头条发布选项尚未开放。
             </div>
           </li>
           <li class="channel-card" data-channel="baijia" data-disabled="true">
@@ -503,11 +504,9 @@
                 <div class="channel-icon channel-icon--placeholder">百</div>
                 <div class="channel-meta">
                   <span class="channel-name">百家号</span>
-                  <span class="channel-desc">等待平台授权接入</span>
                 </div>
               </div>
               <div class="channel-card__actions">
-                <button type="button" class="channel-refresh" data-channel="baijia" disabled>刷新</button>
                 <label class="channel-toggle">
                   <input type="checkbox" class="channel-toggle-input" data-channel="baijia" disabled />
                   <span class="toggle-slider"></span>
@@ -515,7 +514,7 @@
               </div>
             </div>
             <div class="channel-placeholder">
-              百家号发布选项筹备中，预计支持：账号选择、文章分类、原创声明。
+              百家号发布选项筹备中。
             </div>
           </li>
         </ul>

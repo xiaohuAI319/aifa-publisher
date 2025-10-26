@@ -1,18 +1,18 @@
 {
   "tasks": [
     {
-      "id": "adjust-channel-header-button",
-      "content": "调整发布通道头部按钮布局",
+      "id": "relocate-channel-refresh",
+      "content": "将刷新按钮移动到通道卡片顶部并控制展开可见",
       "status": "done"
     },
     {
-      "id": "update-publish-button-logic",
-      "content": "更新一键发布按钮文案与触发逻辑",
+      "id": "tidy-channel-copy",
+      "content": "移除通道备注文案保持卡片整洁",
       "status": "done"
     },
     {
-      "id": "remove-tip-text",
-      "content": "移除侧栏底部提示文案并优化样式",
+      "id": "update-refresh-styles",
+      "content": "更新刷新按钮文案和样式为矩形",
       "status": "done"
     }
   ]
