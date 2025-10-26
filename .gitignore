@@ -5,3 +5,7 @@ config/*.local.json
 # Common secret formats
 .env
 .env.*
+
+# Local docs (tracked in repo only)
+jindu.md
+guifan.md

@@ -1,0 +1,24 @@
+{
+  "tasks": [
+    {
+      "id": "log-progress",
+      "content": "记录 2025-10-24 进度到 jindu.md",
+      "status": "done"
+    },
+    {
+      "id": "update-guidelines",
+      "content": "更新 guifan.md 以反映最新发布侧栏规范",
+      "status": "done"
+    },
+    {
+      "id": "ignore-local-docs",
+      "content": "将 jindu.md 与 guifan.md 加入 .gitignore 并更新规范",
+      "status": "done"
+    },
+    {
+      "id": "design-new-panel",
+      "content": "梳理新版发布通道面板交互与布局方案",
+      "status": "in_progress"
+    }
+  ]
+}
