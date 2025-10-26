@@ -128,13 +128,6 @@
     .editor-shell .tox .tox-edit-area__iframe {
       height: 100% !important;
     }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 16px;
-      margin-top: 24px;
-    }
     button.primary {
       background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
       color: #ffffff;
@@ -150,12 +143,15 @@
       transform: translateY(-1px);
       box-shadow: 0 8px 24px rgba(22, 119, 255, 0.3);
     }
-    .hint {
-      flex: 1;
-      min-width: 240px;
+    .publish-sidebar__action {
+      padding: 10px 18px;
       font-size: 13px;
-      color: #86909c;
-      line-height: 1.6;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(22, 119, 255, 0.22);
+    }
+    .publish-sidebar__action:hover {
+      box-shadow: 0 10px 28px rgba(22, 119, 255, 0.28);
     }
     .publish-sidebar {
       padding: 24px 22px;
@@ -438,16 +434,11 @@
         <div class="editor-shell">
           <textarea id="editor"></textarea>
         </div>
-        <div class="actions">
-          <button class="primary" id="publishBtn">一键发布到知乎</button>
-          <p class="hint">
-            提示：首次使用详见右上角 <strong>“重要：Chrome 插件下载”</strong> 指引。
-          </p>
-        </div>
       </section>
       <aside class="panel publish-sidebar">
         <div class="sidebar-header">
           <h2>发布通道</h2>
+          <button class="primary publish-sidebar__action" id="publishBtn">一键发布</button>
         </div>
         <ul class="channel-list" id="channelList">
           <li class="channel-card" data-channel="zhihu">
@@ -563,7 +554,7 @@
 
     function createTaskPayload() {
       const title = document.getElementById('titleInput').value.trim();
-      const autoPublish = document.getElementById('autoPublish').checked;
+      const autoPublish = false;
       const editorInstance = tinymce.get(EDITOR_ID);
       const html = editorInstance ? editorInstance.getContent({ format: 'html' }) : '';
 
