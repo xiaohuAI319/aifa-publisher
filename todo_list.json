@@ -14,6 +14,11 @@
       "id": "update-refresh-styles",
       "content": "更新刷新按钮文案和样式为矩形",
       "status": "done"
+    },
+    {
+      "id": "draft-reuse-guidelines",
+      "content": "编写代码复用规范草案文档",
+      "status": "done"
     }
   ]
 }
