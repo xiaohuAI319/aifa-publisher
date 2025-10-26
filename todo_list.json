@@ -18,7 +18,27 @@
     {
       "id": "design-new-panel",
       "content": "梳理新版发布通道面板交互与布局方案",
-      "status": "in_progress"
+      "status": "done"
+    },
+    {
+      "id": "refactor-sidebar-layout",
+      "content": "重构发布通道侧栏卡片布局包含独立开关与刷新按钮",
+      "status": "done"
+    },
+    {
+      "id": "implement-channel-interactions",
+      "content": "实现通道开关展开行为与独立刷新逻辑",
+      "status": "done"
+    },
+    {
+      "id": "update-footer-actions",
+      "content": "更新侧栏底部提示与管理配置入口",
+      "status": "done"
+    },
+    {
+      "id": "audit-secrets",
+      "content": "全仓库扫描敏感信息并迁移至环境配置",
+      "status": "done"
     }
   ]
 }

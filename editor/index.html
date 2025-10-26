@@ -159,12 +159,14 @@
     }
     .publish-sidebar {
       padding: 24px 22px;
-      gap: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
       position: relative;
     }
     .sidebar-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
     }
@@ -174,59 +176,61 @@
       font-weight: 600;
       color: #0f1f4b;
     }
-    .sidebar-header button {
-      border: none;
-      background: rgba(22, 119, 255, 0.12);
-      color: #1677ff;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .sidebar-header button:hover {
-      background: rgba(22, 119, 255, 0.2);
-    }
     .channel-list {
       list-style: none;
       padding: 0;
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 18px;
     }
-    .channel-item {
+    .channel-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(22, 119, 255, 0.12);
+      background: #f7f9fc;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .channel-card.is-expanded {
+      border-color: rgba(22, 119, 255, 0.32);
+      background: #ffffff;
+      box-shadow: 0 14px 32px rgba(22, 119, 255, 0.12);
+    }
+    .channel-card[data-disabled="true"] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .channel-card[data-disabled="true"] .channel-toggle,
+    .channel-card[data-disabled="true"] .channel-refresh {
+      pointer-events: none;
+      filter: grayscale(0.3);
+    }
+    .channel-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .channel-card__info {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(22, 119, 255, 0.08);
-      background: #f7f9fc;
-      cursor: pointer;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .channel-item.is-active {
-      border-color: rgba(22, 119, 255, 0.35);
-      box-shadow: 0 10px 24px rgba(22, 119, 255, 0.16);
-      background: #ffffff;
-    }
-    .channel-item.is-disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+      min-width: 0;
     }
     .channel-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 18px;
       font-weight: 600;
       color: #ffffff;
+      flex-shrink: 0;
     }
     .channel-icon--zhihu { background: linear-gradient(135deg, #2979ff, #1e5ad7); }
     .channel-icon--placeholder { background: linear-gradient(135deg, #a6adb7, #818a99); }
@@ -234,6 +238,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      min-width: 0;
     }
     .channel-name {
       font-size: 15px;
@@ -243,117 +248,93 @@
     .channel-desc {
       font-size: 12px;
       color: #98a2b3;
+      line-height: 1.5;
     }
-    .sidebar-divider {
-      height: 1px;
-      margin: 8px 0 6px;
-      background: rgba(22, 119, 255, 0.1);
-    }
-    .auto-publish-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .section-header {
+    .channel-card__actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
     }
-    .section-header h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
+    .channel-refresh {
+      border: 1px solid rgba(22, 119, 255, 0.18);
+      background: rgba(22, 119, 255, 0.08);
+      color: #165996;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .channel-refresh:hover:not([disabled]) {
+      background: rgba(22, 119, 255, 0.16);
+      border-color: rgba(22, 119, 255, 0.35);
       color: #0f1f4b;
     }
-    .section-description {
-      margin: 0;
-      font-size: 13px;
-      color: #86909c;
-      line-height: 1.6;
+    .channel-refresh[disabled] {
+      opacity: 0.6;
+      cursor: wait;
     }
-    .switch {
+    .channel-toggle {
       position: relative;
       display: inline-flex;
-      width: 44px;
-      height: 24px;
+      width: 46px;
+      height: 26px;
     }
-    .switch input {
+    .channel-toggle input {
       opacity: 0;
       width: 0;
       height: 0;
     }
-    .slider {
+    .toggle-slider {
       position: absolute;
-      cursor: pointer;
       inset: 0;
       background: #d0d7de;
       border-radius: 999px;
       transition: background 0.2s ease;
+      cursor: pointer;
     }
-    .slider::before {
+    .toggle-slider::before {
       content: '';
       position: absolute;
-      height: 18px;
-      width: 18px;
+      height: 20px;
+      width: 20px;
       left: 3px;
       top: 3px;
       background: #ffffff;
       border-radius: 50%;
       transition: transform 0.2s ease;
-      box-shadow: 0 4px 10px rgba(15, 37, 64, 0.2);
+      box-shadow: 0 4px 12px rgba(15, 37, 64, 0.2);
     }
-    .switch input:checked + .slider {
+    .channel-toggle input:checked + .toggle-slider {
       background: linear-gradient(135deg, #1677ff, #4096ff);
     }
-    .switch input:checked + .slider::before {
+    .channel-toggle input:checked + .toggle-slider::before {
       transform: translateX(20px);
     }
-    .auto-publish-placeholder,
-    .auto-publish-body {
-      border: 1px dashed rgba(22, 119, 255, 0.18);
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 13px;
-      color: #4e5969;
-      background: rgba(22, 119, 255, 0.06);
-    }
-    .auto-publish-body {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .auto-publish-body[hidden] { display: none; }
-    .auto-publish-placeholder[hidden] { display: none; }
-    .channel-config {
-      border: 1px solid rgba(22, 119, 255, 0.12);
-      border-radius: 12px;
-      padding: 14px;
+    .channel-body {
+      border: 1px solid rgba(22, 119, 255, 0.14);
+      border-radius: 14px;
+      padding: 16px;
       background: #ffffff;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
-    .channel-config[hidden] { display: none; }
-    .channel-config header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+    .channel-body[hidden] {
+      display: none;
     }
-    .channel-config header h4 {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 600;
-      color: #1f2329;
-    }
-    .channel-config header span {
-      font-size: 12px;
-      color: #52c41a;
-      background: rgba(82, 196, 26, 0.15);
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-weight: 600;
+    .channel-placeholder {
+      border: 1px dashed rgba(22, 119, 255, 0.2);
+      border-radius: 14px;
+      padding: 16px;
+      background: rgba(22, 119, 255, 0.06);
+      color: #98a2b3;
+      font-size: 13px;
+      line-height: 1.6;
     }
     .config-field {
       display: flex;
@@ -385,11 +366,46 @@
       border-color: rgba(22, 119, 255, 0.5);
       box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.16);
     }
-    .channel-config--placeholder {
-      border-style: dashed;
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(22, 119, 255, 0.1);
+    }
+    .sidebar-meta {
+      font-size: 12px;
       color: #98a2b3;
-      font-size: 13px;
-      line-height: 1.6;
+    }
+    .sidebar-footer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .sidebar-footer-actions button {
+      border: 1px solid rgba(22, 119, 255, 0.18);
+      background: rgba(22, 119, 255, 0.1);
+      color: #1677ff;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .sidebar-footer-actions button:hover {
+      background: rgba(22, 119, 255, 0.16);
+      border-color: rgba(22, 119, 255, 0.35);
+    }
+    .sidebar-footer-actions a {
+      font-size: 12px;
+      color: #0f1f4b;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .sidebar-footer-actions a:hover {
+      text-decoration: underline;
     }
     @media (max-width: 1024px) {
       .workspace {
@@ -432,54 +448,26 @@
       <aside class="panel publish-sidebar">
         <div class="sidebar-header">
           <h2>发布通道</h2>
-          <button type="button" id="refreshChannels">
-            <span>刷新配置</span>
-          </button>
         </div>
         <ul class="channel-list" id="channelList">
-          <li class="channel-item is-active" data-channel="zhihu">
-            <div class="channel-icon channel-icon--zhihu">知</div>
-            <div class="channel-meta">
-              <span class="channel-name">知乎专栏</span>
-              <span class="channel-desc">已对接 Chrome 扩展，支持自动发布</span>
+          <li class="channel-card" data-channel="zhihu">
+            <div class="channel-card__header">
+              <div class="channel-card__info">
+                <div class="channel-icon channel-icon--zhihu">知</div>
+                <div class="channel-meta">
+                  <span class="channel-name">知乎专栏</span>
+                  <span class="channel-desc">已对接 Chrome 扩展，支持自动发布</span>
+                </div>
+              </div>
+              <div class="channel-card__actions">
+                <button type="button" class="channel-refresh" data-channel="zhihu">刷新</button>
+                <label class="channel-toggle">
+                  <input type="checkbox" class="channel-toggle-input" data-channel="zhihu" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
             </div>
-          </li>
-          <li class="channel-item is-disabled" data-channel="toutiao" data-disabled="true">
-            <div class="channel-icon channel-icon--placeholder">头</div>
-            <div class="channel-meta">
-              <span class="channel-name">今日头条</span>
-              <span class="channel-desc">配置开发中，暂不可用</span>
-            </div>
-          </li>
-          <li class="channel-item is-disabled" data-channel="baijia" data-disabled="true">
-            <div class="channel-icon channel-icon--placeholder">百</div>
-            <div class="channel-meta">
-              <span class="channel-name">百家号</span>
-              <span class="channel-desc">等待平台授权接入</span>
-            </div>
-          </li>
-        </ul>
-        <div class="sidebar-divider"></div>
-        <section class="auto-publish-section">
-          <div class="section-header">
-            <h3>自动发布</h3>
-            <label class="switch">
-              <input type="checkbox" id="autoPublish" />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <p class="section-description">
-            开启后，扩展会根据下方配置自动填充并执行发布；关闭时，仅创建草稿数据。
-          </p>
-          <div class="auto-publish-placeholder" id="autoPublishPlaceholder">
-            尚未开启自动发布。若只需要保存草稿，可保持关闭；如需自动处理，请开启后完善各通道配置。
-          </div>
-          <div class="auto-publish-body" id="autoPublishBody" hidden>
-            <div class="channel-config" data-channel="zhihu">
-              <header>
-                <h4>知乎专栏</h4>
-                <span>已启用</span>
-              </header>
+            <div class="channel-body" data-channel="zhihu" hidden>
               <div class="config-field">
                 <label for="zhihuAccountSelect">发布账号</label>
                 <select id="zhihuAccountSelect">
@@ -496,14 +484,57 @@
                 <input id="zhihuTags" placeholder="例如：AI写作, 发布助手" />
               </div>
             </div>
-            <div class="channel-config channel-config--placeholder" data-channel="toutiao" hidden>
+          </li>
+          <li class="channel-card" data-channel="toutiao" data-disabled="true">
+            <div class="channel-card__header">
+              <div class="channel-card__info">
+                <div class="channel-icon channel-icon--placeholder">头</div>
+                <div class="channel-meta">
+                  <span class="channel-name">今日头条</span>
+                  <span class="channel-desc">配置开发中，暂不可用</span>
+                </div>
+              </div>
+              <div class="channel-card__actions">
+                <button type="button" class="channel-refresh" data-channel="toutiao" disabled>刷新</button>
+                <label class="channel-toggle">
+                  <input type="checkbox" class="channel-toggle-input" data-channel="toutiao" disabled />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="channel-placeholder">
               今日头条发布选项尚未开放，计划包含：头条号选择、封面样式、同步视频等。
             </div>
-            <div class="channel-config channel-config--placeholder" data-channel="baijia" hidden>
+          </li>
+          <li class="channel-card" data-channel="baijia" data-disabled="true">
+            <div class="channel-card__header">
+              <div class="channel-card__info">
+                <div class="channel-icon channel-icon--placeholder">百</div>
+                <div class="channel-meta">
+                  <span class="channel-name">百家号</span>
+                  <span class="channel-desc">等待平台授权接入</span>
+                </div>
+              </div>
+              <div class="channel-card__actions">
+                <button type="button" class="channel-refresh" data-channel="baijia" disabled>刷新</button>
+                <label class="channel-toggle">
+                  <input type="checkbox" class="channel-toggle-input" data-channel="baijia" disabled />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="channel-placeholder">
               百家号发布选项筹备中，预计支持：账号选择、文章分类、原创声明。
             </div>
+          </li>
+        </ul>
+        <div class="sidebar-footer">
+          <div class="sidebar-meta" id="sidebarMeta">上次同步：--</div>
+          <div class="sidebar-footer-actions">
+            <button type="button" id="refreshAllChannels">手动刷新全部</button>
+            <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">管理通道配置</a>
           </div>
-        </section>
+        </div>
       </aside>
     </div>
   </div>
@@ -671,54 +702,69 @@
     });
 
     // --- Sidebar UI interactions ---
-    const channelItems = Array.from(document.querySelectorAll('.channel-item'));
-    const channelConfigs = Array.from(document.querySelectorAll('.channel-config'));
-    const autoPublishToggle = document.getElementById('autoPublish');
-    const autoPublishBody = document.getElementById('autoPublishBody');
-    const autoPublishPlaceholder = document.getElementById('autoPublishPlaceholder');
+    const channelCards = Array.from(document.querySelectorAll('.channel-card'));
+    const channelToggleInputs = Array.from(document.querySelectorAll('.channel-toggle-input'));
+    const channelBodies = Array.from(document.querySelectorAll('.channel-body'));
+    const refreshButtons = Array.from(document.querySelectorAll('.channel-refresh'));
+    const refreshAllButton = document.getElementById('refreshAllChannels');
+    const sidebarMeta = document.getElementById('sidebarMeta');
 
-    function setActiveChannel(channelId) {
-      channelItems.forEach((item) => {
-        const isActive = item.dataset.channel === channelId;
-        item.classList.toggle('is-active', isActive);
-      });
-      channelConfigs.forEach((config) => {
-        const isMatch = config.dataset.channel === channelId;
-        const isPlaceholder = config.classList.contains('channel-config--placeholder');
-        if (isMatch) {
-          config.removeAttribute('hidden');
-        } else if (isPlaceholder) {
-          config.setAttribute('hidden', '');
-        } else {
-          config.setAttribute('hidden', '');
-        }
-      });
-    }
-
-    channelItems.forEach((item) => {
-      if (item.dataset.disabled === 'true') return;
-      item.addEventListener('click', () => {
-        const channelId = item.dataset.channel;
-        setActiveChannel(channelId);
-      });
-    });
-
-    function syncAutoPublishPanel() {
-      const enabled = autoPublishToggle.checked;
-      if (enabled) {
-        autoPublishBody.removeAttribute('hidden');
-        autoPublishPlaceholder.setAttribute('hidden', '');
+    function setChannelExpanded(channelId, expanded) {
+      const card = channelCards.find((item) => item.dataset.channel === channelId);
+      if (!card) return;
+      card.classList.toggle('is-expanded', expanded);
+      const body = channelBodies.find((section) => section.dataset.channel === channelId);
+      if (!body) return;
+      if (expanded) {
+        body.removeAttribute('hidden');
       } else {
-        autoPublishBody.setAttribute('hidden', '');
-        autoPublishPlaceholder.removeAttribute('hidden');
+        body.setAttribute('hidden', '');
       }
     }
 
-    autoPublishToggle.addEventListener('change', syncAutoPublishPanel);
+    channelToggleInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        const channelId = input.dataset.channel;
+        setChannelExpanded(channelId, input.checked);
+      });
+    });
 
-    // 初始化状态
-    setActiveChannel('zhihu');
-    syncAutoPublishPanel();
+    refreshButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const channelId = button.dataset.channel;
+        if (!channelId) return;
+        simulateChannelRefresh(button, channelId);
+      });
+    });
+
+    refreshAllButton?.addEventListener('click', () => {
+      const actionableButtons = refreshButtons.filter((button) => !button.disabled);
+      actionableButtons.forEach((button, index) => {
+        setTimeout(() => {
+          simulateChannelRefresh(button, button.dataset.channel);
+        }, index * 200);
+      });
+    });
+
+    function simulateChannelRefresh(button, channelId) {
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = '刷新中...';
+      button.setAttribute('aria-busy', 'true');
+
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = originalText;
+        button.removeAttribute('aria-busy');
+        sidebarMeta.textContent = `上次同步：${new Date().toLocaleTimeString()}`;
+      }, 1200);
+    }
+
+    function initializeSidebarState() {
+      sidebarMeta.textContent = '上次同步：刚刚';
+    }
+
+    initializeSidebarState();
   </script>
 </body>
 </html>
