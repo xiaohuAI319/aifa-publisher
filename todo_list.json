@@ -1,23 +1,28 @@
 {
   "tasks": [
     {
-      "id": "relocate-channel-refresh",
-      "content": "将刷新按钮移动到通道卡片顶部并控制展开可见",
+      "id": "add-zhihu-login-status-ui",
+      "content": "在知乎通道卡片新增登录状态提示与重新登录入口",
       "status": "done"
     },
     {
-      "id": "tidy-channel-copy",
-      "content": "移除通道备注文案保持卡片整洁",
+      "id": "wire-login-status-logic",
+      "content": "实现登录状态刷新与扫码登录流程联动",
       "status": "done"
     },
     {
-      "id": "update-refresh-styles",
-      "content": "更新刷新按钮文案和样式为矩形",
+      "id": "debug-online-status",
+      "content": "排查线上站点未显示登录异常提示的问题",
       "status": "done"
     },
     {
-      "id": "draft-reuse-guidelines",
-      "content": "编写代码复用规范草案文档",
+      "id": "sync-updated-index",
+      "content": "将最新登录轮询逻辑部署到 CloudBase",
+      "status": "done"
+    },
+    {
+      "id": "communicate-status",
+      "content": "同步排查进展与处理方案",
       "status": "done"
     }
   ]

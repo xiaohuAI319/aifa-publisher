@@ -775,68 +775,67 @@
     });
 
     // --- Sidebar UI interactions ---
-    try {
-      const channelCards = Array.from(document.querySelectorAll('.channel-card'));
-      const channelToggleInputs = Array.from(document.querySelectorAll('.channel-toggle-input'));
-      const channelBodies = Array.from(document.querySelectorAll('.channel-body'));
-      const refreshButtons = Array.from(document.querySelectorAll('.channel-refresh'));
-      const refreshAllButton = document.getElementById('refreshAllChannels');
-      const sidebarMeta = document.getElementById('sidebarMeta');
+    const channelCards = Array.from(document.querySelectorAll('.channel-card'));
+    const channelToggleInputs = Array.from(document.querySelectorAll('.channel-toggle-input'));
+    const channelBodies = Array.from(document.querySelectorAll('.channel-body'));
+    const refreshButtons = Array.from(document.querySelectorAll('.channel-refresh'));
+    const refreshAllButton = document.getElementById('refreshAllChannels');
+    const sidebarMeta = document.getElementById('sidebarMeta');
 
-      function setChannelExpanded(channelId, expanded) {
-        const card = channelCards.find((item) => item.dataset.channel === channelId);
-        if (!card) return;
-        card.classList.toggle('is-expanded', expanded);
-        const body = channelBodies.find((section) => section.dataset.channel === channelId);
-        if (!body) return;
-        if (expanded) {
-          body.removeAttribute('hidden');
-        } else {
-          body.setAttribute('hidden', '');
-        }
+    function setChannelExpanded(channelId, expanded) {
+      const card = channelCards.find((item) => item.dataset.channel === channelId);
+      if (!card) return;
+      card.classList.toggle('is-expanded', expanded);
+      const body = channelBodies.find((section) => section.dataset.channel === channelId);
+      if (!body) return;
+      if (expanded) {
+        body.removeAttribute('hidden');
+      } else {
+        body.setAttribute('hidden', '');
       }
+    }
 
-      channelToggleInputs.forEach((input) => {
-        input.addEventListener('change', () => {
-          const channelId = input.dataset.channel;
-          setChannelExpanded(channelId, input.checked);
-        });
+    channelToggleInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        const channelId = input.dataset.channel;
+        setChannelExpanded(channelId, input.checked);
       });
+    });
 
-      refreshButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          const channelId = button.dataset.channel;
-          if (!channelId) return;
-          simulateChannelRefresh(button, channelId);
-        });
+    refreshButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const channelId = button.dataset.channel;
+        if (!channelId) return;
+        simulateChannelRefresh(button, channelId);
       });
+    });
 
-      refreshAllButton?.addEventListener('click', () => {
-        const actionableButtons = refreshButtons.filter((button) => !button.disabled);
-        actionableButtons.forEach((button, index) => {
-          setTimeout(() => {
-            simulateChannelRefresh(button, button.dataset.channel);
-          }, index * 200);
-        });
-      });
-
-      function simulateChannelRefresh(button, channelId) {
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = '刷新中...';
-        button.setAttribute('aria-busy', 'true');
-
+    refreshAllButton?.addEventListener('click', () => {
+      const actionableButtons = refreshButtons.filter((button) => !button.disabled);
+      actionableButtons.forEach((button, index) => {
         setTimeout(() => {
-          button.disabled = false;
-          button.textContent = originalText;
-          button.removeAttribute('aria-busy');
-          sidebarMeta.textContent = `上次同步：${new Date().toLocaleTimeString()}`;
-        }, 1200);
-      }
+          simulateChannelRefresh(button, button.dataset.channel);
+        }, index * 200);
+      });
+    });
 
-      function initializeSidebarState() {
-        sidebarMeta.textContent = '上次同步：刚刚';
-      }
+    function simulateChannelRefresh(button, channelId) {
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = '刷新中...';
+      button.setAttribute('aria-busy', 'true');
+
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = originalText;
+        button.removeAttribute('aria-busy');
+        sidebarMeta.textContent = `上次同步：${new Date().toLocaleTimeString()}`;
+      }, 1200);
+    }
+
+    function initializeSidebarState() {
+      sidebarMeta.textContent = '上次同步：刚刚';
+    }
 
       let nextLoginStatus = 'unknown';
       let isPolling = false;
