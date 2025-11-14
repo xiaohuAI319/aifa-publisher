@@ -113,3 +113,137 @@ export async function pollLoginSessionStatus(sessionToken) {
     sessionToken: data.sessionToken
   };
 }
+
+// ==================== 小红书服务函数（使用本地Node.js服务） ====================
+
+const XIAOHONGSHU_API_BASE = 'http://localhost:3001/api';
+
+/**
+ * 获取小红书账号列表（从本地JSON文件）
+ * @returns {Promise<Array>} 账号列表
+ */
+export async function fetchXiaohongshuAccounts() {
+  try {
+    const response = await fetch(`${XIAOHONGSHU_API_BASE}/accounts`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.accounts || [];
+  } catch (error) {
+    console.error('[session-service] 获取小红书账号列表失败:', error.message);
+    return [];
+  }
+}
+
+/**
+ * 获取小红书登录状态
+ * @param {string} accountId - 账号ID
+ * @returns {Promise<Object>} 登录状态信息
+ */
+export async function getXiaohongshuLoginStatus(accountId) {
+  try {
+    const response = await fetch(`${XIAOHONGSHU_API_BASE}/login/status?accountId=${encodeURIComponent(accountId)}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return {
+      status: data.status || 'expired',
+      accountId: data.accountId,
+      profileName: data.profileName || ''
+    };
+  } catch (error) {
+    console.error('[session-service] 查询小红书登录状态失败:', error.message);
+    return { status: 'expired' };
+  }
+}
+
+/**
+ * 启动小红书扫码登录会话
+ * @param {string} accountId - 账号ID
+ * @returns {Promise<Object|null>} 会话信息
+ */
+export async function startXiaohongshuLoginSession(accountId) {
+  try {
+    const response = await fetch(`${XIAOHONGSHU_API_BASE}/login/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ accountId })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      sessionToken: data.sessionToken,
+      qrCodeUrl: data.qrCodeUrl,
+      expiresAt: data.expiresAt,
+      accountId: data.accountId
+    };
+  } catch (error) {
+    console.error('[session-service] 启动小红书登录会话失败:', error.message);
+    return null;
+  }
+}
+
+/**
+ * 轮询小红书登录状态
+ * @param {string} sessionToken - 会话令牌
+ * @returns {Promise<Object>} 登录状态
+ */
+export async function pollXiaohongshuLoginStatus(sessionToken) {
+  try {
+    const response = await fetch(`${XIAOHONGSHU_API_BASE}/login/status?sessionToken=${encodeURIComponent(sessionToken)}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return {
+      status: data.status,
+      accountId: data.accountId,
+      profileName: data.profileName,
+      qrCodeUrl: data.qrCodeUrl,
+      sessionToken: data.sessionToken
+    };
+  } catch (error) {
+    console.error('[session-service] 轮询小红书登录状态失败:', error.message);
+    return { status: 'expired' };
+  }
+}
+
+/**
+ * 发布内容到小红书
+ * @param {Object} taskPayload - 发布任务数据
+ * @returns {Promise<Object>} 发布结果
+ */
+export async function publishToXiaohongshu(taskPayload) {
+  try {
+    const response = await fetch(`${XIAOHONGSHU_API_BASE}/publish`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(taskPayload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      url: data.url,
+      message: data.message || '发布成功'
+    };
+  } catch (error) {
+    console.error('[session-service] 小红书发布失败:', error.message);
+    throw error;
+  }
+}

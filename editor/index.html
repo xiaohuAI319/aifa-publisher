@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap">
   <script src="./assets/tinymce/tinymce.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
   <style>
     :root {
       color-scheme: light;
@@ -229,6 +230,7 @@
       flex-shrink: 0;
     }
     .channel-icon--zhihu { background: linear-gradient(135deg, #2979ff, #1e5ad7); }
+    .channel-icon--xiaohongshu { background: linear-gradient(135deg, #ff2442, #ff6b9d); }
     .channel-icon--placeholder { background: linear-gradient(135deg, #a6adb7, #818a99); }
     .channel-meta {
       display: flex;
@@ -586,6 +588,46 @@
               百家号发布选项筹备中。
             </div>
           </li>
+          <li class="channel-card" data-channel="xiaohongshu">
+            <div class="channel-card__header">
+              <div class="channel-card__info">
+                <div class="channel-icon channel-icon--xiaohongshu">红</div>
+                <div class="channel-meta">
+                  <span class="channel-name">小红书</span>
+                </div>
+              </div>
+              <div class="channel-card__actions">
+                <label class="channel-toggle">
+                  <input type="checkbox" class="channel-toggle-input" data-channel="xiaohongshu" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="channel-body" data-channel="xiaohongshu" hidden>
+              <div class="channel-body__header">
+                <button type="button" class="channel-refresh" data-channel="xiaohongshu">刷新配置</button>
+              </div>
+              <div class="channel-status" data-channel="xiaohongshu" hidden>
+                <span class="channel-status__icon" aria-hidden="true">⚠️</span>
+                <div class="channel-status__body">
+                  <p class="channel-status__text" id="xiaohongshuStatusText">账号登录状态异常，请重新登录</p>
+                  <button type="button" class="channel-status__action" data-action="relogin" data-channel="xiaohongshu" id="xiaohongshuReloginBtn">
+                    去重新登录
+                  </button>
+                </div>
+              </div>
+              <div class="config-field">
+                <label for="xiaohongshuAccountSelect">发布账号</label>
+                <select id="xiaohongshuAccountSelect">
+                  <option value="account_1">主账号</option>
+                </select>
+              </div>
+              <div class="config-field">
+                <label for="xiaohongshuTags">标签（逗号分隔）</label>
+                <input id="xiaohongshuTags" placeholder="例如：生活, 分享, 好物推荐" />
+              </div>
+            </div>
+          </li>
         </ul>
         <div class="sidebar-footer">
           <div class="sidebar-meta" id="sidebarMeta">上次同步：--</div>
@@ -610,10 +652,131 @@
       fetchChannelAccounts,
       getChannelLoginStatus,
       startLoginSession,
-      pollLoginSessionStatus
+      pollLoginSessionStatus,
+      fetchXiaohongshuAccounts,
+      getXiaohongshuLoginStatus,
+      startXiaohongshuLoginSession,
+      pollXiaohongshuLoginStatus,
+      publishToXiaohongshu
     } from './session-service.js';
 
     const EDITOR_ID = 'editor';
+    let isMarkdownMode = false;
+
+    /**
+     * 将Markdown转换为HTML
+     * @param {string} markdown - Markdown文本
+     * @returns {string} HTML文本
+     */
+    function markdownToHtml(markdown) {
+      if (typeof marked === 'undefined') {
+        console.warn('marked.js未加载，无法转换Markdown');
+        return markdown;
+      }
+      try {
+        return marked.parse(markdown);
+      } catch (error) {
+        console.error('Markdown转换失败:', error);
+        return markdown;
+      }
+    }
+
+    /**
+     * 将HTML转换为Markdown（简化版，仅处理基本格式）
+     * @param {string} html - HTML文本
+     * @returns {string} Markdown文本
+     */
+    function htmlToMarkdown(html) {
+      if (!html) return '';
+      
+      // 创建临时DOM元素
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // 简单的HTML到Markdown转换
+      let markdown = tempDiv.textContent || tempDiv.innerText || '';
+      
+      // 处理换行
+      markdown = markdown.replace(/\n{3,}/g, '\n\n');
+      
+      return markdown.trim();
+    }
+
+    /**
+     * 将Markdown或HTML转换为纯文本（用于小红书发布）
+     * @param {string} content - Markdown或HTML内容
+     * @param {boolean} isMarkdown - 是否为Markdown格式
+     * @returns {string} 纯文本
+     */
+    function markdownToPlainText(content, isMarkdown = false) {
+      if (!content) return '';
+      
+      let text = '';
+      
+      if (isMarkdown) {
+        // 如果是Markdown，先转为HTML再提取文本
+        const html = markdownToHtml(content);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        text = tempDiv.textContent || tempDiv.innerText || '';
+      } else {
+        // 如果是HTML，直接提取文本
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        text = tempDiv.textContent || tempDiv.innerText || '';
+      }
+      
+      // 清理多余空白字符
+      text = text
+        .replace(/\n{3,}/g, '\n\n')  // 多个换行合并为两个
+        .replace(/[ \t]+/g, ' ')      // 多个空格合并为一个
+        .trim();
+      
+      return text;
+    }
+
+    /**
+     * 切换Markdown/HTML模式
+     */
+    function toggleMarkdownMode() {
+      const editor = tinymce.get(EDITOR_ID);
+      if (!editor) return;
+
+      isMarkdownMode = !isMarkdownMode;
+      const currentContent = editor.getContent({ format: 'html' });
+
+      if (isMarkdownMode) {
+        // 切换到Markdown模式：HTML -> Markdown
+        const markdown = htmlToMarkdown(currentContent);
+        editor.setContent(markdown, { format: 'text' });
+        editor.mode.set('source'); // 切换到源代码模式
+      } else {
+        // 切换到HTML模式：Markdown -> HTML
+        if (editor.mode.get() === 'source') {
+          const sourceContent = editor.getContent({ format: 'text' });
+          const html = markdownToHtml(sourceContent);
+          editor.mode.set('design');
+          editor.setContent(html, { format: 'html' });
+        }
+      }
+
+      // 更新按钮状态
+      updateMarkdownButton();
+    }
+
+    /**
+     * 更新Markdown按钮状态
+     */
+    function updateMarkdownButton() {
+      const editor = tinymce.get(EDITOR_ID);
+      if (!editor) return;
+
+      const button = editor.buttons.markdown;
+      if (button) {
+        button.active(isMarkdownMode);
+        button.text(isMarkdownMode ? 'HTML' : 'Markdown');
+      }
+    }
 
     tinymce.init({
       selector: `#${EDITOR_ID}`,
@@ -626,37 +789,99 @@
       plugins: 'lists link image table code autoresize',
       autoresize_min_height: 0,
       autoresize_bottom_margin: 0,
-      toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code',
+      toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code | markdown',
       language_url: './assets/tinymce/langs/zh_CN.v2.js?v=20241022',
       automatic_uploads: false,
       paste_data_images: true,
       convert_urls: false,
-      content_style: 'body { line-height: 1.7; font-size: 16px; font-family: "Noto Sans SC", system-ui; }'
+      content_style: 'body { line-height: 1.7; font-size: 16px; font-family: "Noto Sans SC", system-ui; }',
+      setup: (editor) => {
+        // 添加Markdown切换按钮
+        editor.ui.registry.addButton('markdown', {
+          text: 'Markdown',
+          tooltip: '切换Markdown/HTML模式',
+          onAction: () => {
+            toggleMarkdownMode();
+          }
+        });
+      }
     });
+
+    /**
+     * 获取当前选中的发布平台
+     * @returns {string|null} 平台ID或null
+     */
+    function getSelectedPlatform() {
+      const zhihuToggle = document.querySelector('.channel-toggle-input[data-channel="zhihu"]');
+      const xiaohongshuToggle = document.querySelector('.channel-toggle-input[data-channel="xiaohongshu"]');
+      
+      if (xiaohongshuToggle && xiaohongshuToggle.checked) {
+        return 'xiaohongshu';
+      }
+      if (zhihuToggle && zhihuToggle.checked) {
+        return 'zhihu';
+      }
+      // 默认返回知乎（兼容旧逻辑）
+      return 'zhihu';
+    }
 
     function createTaskPayload() {
       const title = document.getElementById('titleInput').value.trim();
       const autoPublish = false;
       const editorInstance = tinymce.get(EDITOR_ID);
-      const html = editorInstance ? editorInstance.getContent({ format: 'html' }) : '';
+      const platform = getSelectedPlatform();
+      
+      let content = '';
+      let plainText = '';
+
+      if (editorInstance) {
+        if (isMarkdownMode && editorInstance.mode.get() === 'source') {
+          // Markdown模式
+          content = editorInstance.getContent({ format: 'text' });
+          plainText = markdownToPlainText(content, true);
+        } else {
+          // HTML模式
+          content = editorInstance.getContent({ format: 'html' });
+          plainText = markdownToPlainText(content, false);
+        }
+      }
 
       if (!title) {
         alert('请先填写标题');
         throw new Error('标题为空');
       }
-      if (!html && !confirm('正文为空，是否继续只发布标题？')) {
+      if (!content && !plainText && !confirm('正文为空，是否继续只发布标题？')) {
         throw new Error('正文为空且用户取消');
       }
 
       const taskId = `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-      return {
-        type: 'AIFA_TASK',
-        platform: 'zhihu',
-        taskId,
-        autoPublish,
-        payload: { title, content: html }
-      };
+      // 根据平台返回不同的payload
+      if (platform === 'xiaohongshu') {
+        // 小红书使用纯文本
+        const tags = document.getElementById('xiaohongshuTags')?.value.trim() || '';
+        return {
+          type: 'AIFA_TASK',
+          platform: 'xiaohongshu',
+          taskId,
+          autoPublish,
+          payload: {
+            title,
+            content: plainText,  // 纯文本
+            tags: tags.split(',').map(t => t.trim()).filter(t => t),
+            accountId: document.getElementById('xiaohongshuAccountSelect')?.value || 'account_1'
+          }
+        };
+      } else {
+        // 知乎使用HTML
+        return {
+          type: 'AIFA_TASK',
+          platform: 'zhihu',
+          taskId,
+          autoPublish,
+          payload: { title, content }
+        };
+      }
     }
 
     function openZhihuWritePage() {
@@ -764,13 +989,22 @@
       }, 10000);
     }
 
-    document.getElementById('publishBtn').addEventListener('click', () => {
+    document.getElementById('publishBtn').addEventListener('click', async () => {
       try {
         const task = createTaskPayload();
-        const targetWindow = openZhihuWritePage();
-        setupMessageBridge(targetWindow, task);
+        const platform = task.platform;
+
+        if (platform === 'xiaohongshu') {
+          // 小红书：调用本地Node.js服务
+          await publishToXiaohongshu(task);
+        } else {
+          // 知乎：使用Chrome扩展（原有逻辑）
+          const targetWindow = openZhihuWritePage();
+          setupMessageBridge(targetWindow, task);
+        }
       } catch (error) {
-        throw error;
+        console.error('发布失败:', error);
+        alert('发布失败：' + (error.message || '未知错误'));
       }
     });
 

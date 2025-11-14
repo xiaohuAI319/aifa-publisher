@@ -1,11 +1,24 @@
-# Local environment overrides (keep sensitive info out of git)
-config/local.env.json
-config/*.local.json
+# Node.js
+node_modules/
+npm-debug.log*
+package-lock.json
 
-# Common secret formats
-.env
-.env.*
+# 本地数据（包含敏感 Cookie）
+data/xiaohongshu-cookies.json
+.specstory/*
+# 日志
+*.log
 
-# Local docs (tracked in repo only)
-jindu.md
-guifan.md
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+*.tmp
+.cache/

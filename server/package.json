@@ -1,0 +1,17 @@
+{
+  "name": "xiaohongshu-publisher-server",
+  "version": "1.0.0",
+  "description": "小红书自动化发布服务",
+  "main": "xiaohongshu-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node xiaohongshu-server.js",
+    "dev": "node --watch xiaohongshu-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "playwright": "^1.40.0",
+    "cors": "^2.8.5"
+  }
+}
+
