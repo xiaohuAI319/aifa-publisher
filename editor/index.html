@@ -251,6 +251,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
+      gap: 8px;
       margin-bottom: 12px;
     }
     .channel-refresh {
@@ -274,6 +275,31 @@
       box-shadow: 0 6px 16px rgba(22, 119, 255, 0.18);
     }
     .channel-refresh[disabled] {
+      opacity: 0.6;
+      cursor: wait;
+      box-shadow: none;
+    }
+    .channel-publish {
+      border: 1px solid rgba(255, 36, 66, 0.22);
+      background: rgba(255, 36, 66, 0.12);
+      color: #d4380d;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .channel-publish:hover:not([disabled]) {
+      background: rgba(255, 36, 66, 0.18);
+      border-color: rgba(255, 36, 66, 0.42);
+      color: #a0260a;
+      box-shadow: 0 6px 16px rgba(255, 36, 66, 0.18);
+    }
+    .channel-publish[disabled] {
       opacity: 0.6;
       cursor: wait;
       box-shadow: none;
@@ -612,6 +638,7 @@
             <div class="channel-body" data-channel="xiaohongshu" hidden>
               <div class="channel-body__header">
                 <button type="button" class="channel-refresh" data-channel="xiaohongshu">刷新配置</button>
+                <button type="button" class="channel-publish" data-channel="xiaohongshu">发布</button>
               </div>
               <div class="channel-status" data-channel="xiaohongshu" hidden>
                 <span class="channel-status__icon" aria-hidden="true">⚠️</span>
@@ -901,6 +928,12 @@
     }
 
     function setupMessageBridge(targetWindow, task) {
+      // 确保只有知乎平台才执行此函数
+      if (task.platform !== 'zhihu') {
+        console.warn('setupMessageBridge 只支持知乎平台，当前平台:', task.platform);
+        return;
+      }
+      
       const expectedTaskId = task.taskId;
       let handshakeReceived = false;
       let taskCompleted = false;
@@ -979,7 +1012,10 @@
               targetWindow.postMessage(task, '*');
               responseTimeoutTimer = setTimeout(() => {
                 if (taskCompleted) return;
-                alert('未收到扩展响应，请确认扩展已启用并重试');
+                // 再次确认是知乎平台才显示错误
+                if (task.platform === 'zhihu') {
+                  alert('未收到扩展响应，请确认扩展已启用并重试');
+                }
                 cleanup();
               }, 30000);
             } catch (error) {
@@ -1652,6 +1688,137 @@
         });
       } else {
         console.warn('[editor] 警告：未找到小红书刷新按钮！');
+      }
+
+      // 小红书发布按钮事件处理
+      const xiaohongshuPublishButton = document.querySelector('.channel-publish[data-channel="xiaohongshu"]');
+      if (xiaohongshuPublishButton) {
+        console.log('[editor] 小红书发布按钮已找到，绑定事件监听器');
+        xiaohongshuPublishButton.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[editor] 小红书发布按钮被点击');
+          
+          try {
+            // 验证必填项
+            const title = document.getElementById('titleInput')?.value.trim();
+            if (!title) {
+              alert('请先填写标题');
+              return;
+            }
+
+            // 获取内容
+            const editorInstance = tinymce.get(EDITOR_ID);
+            let content = '';
+            let plainText = '';
+            
+            if (editorInstance) {
+              if (isMarkdownMode && editorInstance.mode.get() === 'source') {
+                // Markdown模式
+                content = editorInstance.getContent({ format: 'text' });
+                plainText = markdownToPlainText(content, true);
+              } else {
+                // HTML模式
+                content = editorInstance.getContent({ format: 'html' });
+                plainText = markdownToPlainText(content, false);
+              }
+            }
+
+            if (!content && !plainText && !confirm('正文为空，是否继续只发布标题？')) {
+              return;
+            }
+
+            // 获取账号和标签
+            const accountId = document.getElementById('xiaohongshuAccountSelect')?.value || 'account_1';
+            const tags = document.getElementById('xiaohongshuTags')?.value.trim() || '';
+            
+            // 创建任务数据
+            const taskId = `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+            const task = {
+              type: 'AIFA_TASK',
+              platform: 'xiaohongshu',
+              taskId,
+              autoPublish: false,
+              payload: {
+                title,
+                content: plainText,  // 纯文本
+                tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                accountId
+              }
+            };
+
+            // 更新按钮状态
+            const originalText = xiaohongshuPublishButton.textContent;
+            xiaohongshuPublishButton.disabled = true;
+            xiaohongshuPublishButton.textContent = '发布中...';
+            xiaohongshuPublishButton.setAttribute('aria-busy', 'true');
+
+            console.log('[editor] 开始发布到小红书...', task);
+            
+            // 调用发布接口
+            const result = await publishToXiaohongshu(task);
+            
+            // 保存发布历史
+            saveHistoryAfterPublish(task, result);
+            
+            // 显示成功提示
+            alert(result.message || '发布成功！');
+            
+            // 恢复按钮状态
+            xiaohongshuPublishButton.disabled = false;
+            xiaohongshuPublishButton.textContent = originalText;
+            xiaohongshuPublishButton.removeAttribute('aria-busy');
+            
+          } catch (error) {
+            console.error('[editor] 发布失败:', error);
+            alert('发布失败：' + (error.message || '未知错误'));
+            
+            // 恢复按钮状态
+            const xiaohongshuPublishButton = document.querySelector('.channel-publish[data-channel="xiaohongshu"]');
+            if (xiaohongshuPublishButton) {
+              xiaohongshuPublishButton.disabled = false;
+              xiaohongshuPublishButton.textContent = '发布';
+              xiaohongshuPublishButton.removeAttribute('aria-busy');
+            }
+            
+            // 即使发布失败也尝试保存历史（用于记录失败原因）
+            try {
+              const title = document.getElementById('titleInput')?.value.trim();
+              const editorInstance = tinymce.get(EDITOR_ID);
+              let content = '';
+              if (editorInstance) {
+                if (isMarkdownMode && editorInstance.mode.get() === 'source') {
+                  content = editorInstance.getContent({ format: 'text' });
+                } else {
+                  content = editorInstance.getContent({ format: 'html' });
+                }
+              }
+              const accountId = document.getElementById('xiaohongshuAccountSelect')?.value || 'account_1';
+              const tags = document.getElementById('xiaohongshuTags')?.value.trim() || '';
+              const taskId = `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+              const task = {
+                type: 'AIFA_TASK',
+                platform: 'xiaohongshu',
+                taskId,
+                autoPublish: false,
+                payload: {
+                  title,
+                  content: markdownToPlainText(content, isMarkdownMode && editorInstance?.mode.get() === 'source'),
+                  tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                  accountId
+                }
+              };
+              saveHistoryAfterPublish(task, {
+                success: false,
+                message: error.message || '发布失败'
+              });
+            } catch (historyError) {
+              console.error('保存失败历史失败:', historyError);
+            }
+          }
+        });
+      } else {
+        console.warn('[editor] 警告：未找到小红书发布按钮！');
       }
 
       // 小红书重新登录按钮事件处理
