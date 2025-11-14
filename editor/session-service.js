@@ -180,10 +180,12 @@ export async function startXiaohongshuLoginSession(accountId) {
 
     const data = await response.json();
     return {
+      success: data.success || false,
       sessionToken: data.sessionToken,
       qrCodeUrl: data.qrCodeUrl,
       expiresAt: data.expiresAt,
-      accountId: data.accountId
+      accountId: data.accountId,
+      message: data.message
     };
   } catch (error) {
     console.error('[session-service] 启动小红书登录会话失败:', error.message);
@@ -233,7 +235,16 @@ export async function publishToXiaohongshu(taskPayload) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      
+      // 构造详细的错误信息，包括Call log
+      let fullErrorMessage = `发布失败: ${errorMessage}`;
+      if (errorData.callLog) {
+        fullErrorMessage += `\nCall log: ${errorData.callLog}`;
+      }
+      
+      console.error('[session-service] 小红书发布失败:', fullErrorMessage);
+      throw new Error(fullErrorMessage);
     }
 
     const data = await response.json();
@@ -243,6 +254,13 @@ export async function publishToXiaohongshu(taskPayload) {
       message: data.message || '发布成功'
     };
   } catch (error) {
+    // 如果是网络错误，提供更友好的提示
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      const networkError = new Error('发布失败: 无法连接到本地服务，请确保小红书服务正在运行 (http://localhost:3001)');
+      console.error('[session-service] 网络错误:', networkError.message);
+      throw networkError;
+    }
+    
     console.error('[session-service] 小红书发布失败:', error.message);
     throw error;
   }

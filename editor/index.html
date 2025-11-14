@@ -1038,21 +1038,19 @@
       });
 
       refreshButtons.forEach((button) => {
+        const channelId = button.dataset.channel;
+        // 小红书使用专门的刷新逻辑，跳过通用处理
+        if (channelId === 'xiaohongshu') {
+          return; // 跳过，使用下面专门的事件处理
+        }
         button.addEventListener('click', () => {
-          const channelId = button.dataset.channel;
           if (!channelId) return;
+          // 其他通道使用通用的模拟刷新
           simulateChannelRefresh(button, channelId);
         });
       });
 
-      refreshAllButton?.addEventListener('click', () => {
-        const actionableButtons = refreshButtons.filter((button) => !button.disabled);
-        actionableButtons.forEach((button, index) => {
-          setTimeout(() => {
-            simulateChannelRefresh(button, button.dataset.channel);
-          }, index * 200);
-        });
-      });
+      // refreshAllButton 的事件监听器在下面单独定义，支持真正的刷新逻辑
 
       function simulateChannelRefresh(button, channelId) {
         const originalText = button.textContent;
@@ -1087,6 +1085,15 @@
         reloginButton: document.getElementById('zhihuReloginBtn')
       };
 
+      const xiaohongshuElements = {
+        card: document.querySelector('.channel-card[data-channel="xiaohongshu"]'),
+        body: document.querySelector('.channel-body[data-channel="xiaohongshu"]'),
+        select: document.getElementById('xiaohongshuAccountSelect'),
+        status: document.querySelector('.channel-status[data-channel="xiaohongshu"]'),
+        statusText: document.getElementById('xiaohongshuStatusText'),
+        reloginButton: document.getElementById('xiaohongshuReloginBtn')
+      };
+
       function setStatusVariant(variant) {
         if (!zhihuElements.status) return;
         zhihuElements.status.dataset.variant = variant;
@@ -1117,6 +1124,52 @@
         zhihuElements.status.setAttribute('hidden', '');
         zhihuElements.statusText.textContent = '';
         zhihuElements.reloginButton?.setAttribute('hidden', '');
+      }
+
+      /**
+       * 设置小红书状态样式变体
+       * @param {string} variant - 状态变体（warning/info/success）
+       */
+      function setXiaohongshuStatusVariant(variant) {
+        if (!xiaohongshuElements.status) return;
+        xiaohongshuElements.status.dataset.variant = variant;
+      }
+
+      /**
+       * 显示小红书状态信息
+       * @param {Object} options - 状态选项
+       * @param {string} options.message - 状态消息
+       * @param {string} options.action - 操作类型（relogin/waiting）
+       * @param {string} options.variant - 状态变体（warning/info/success）
+       */
+      function showXiaohongshuStatus({ message, action, variant = 'warning' }) {
+        if (!xiaohongshuElements.status || !xiaohongshuElements.statusText || !xiaohongshuElements.reloginButton) {
+          return;
+        }
+        xiaohongshuElements.status.removeAttribute('hidden');
+        xiaohongshuElements.statusText.textContent = message;
+        setXiaohongshuStatusVariant(variant);
+        if (action === 'relogin') {
+          xiaohongshuElements.reloginButton.removeAttribute('hidden');
+          xiaohongshuElements.reloginButton.disabled = false;
+          xiaohongshuElements.reloginButton.textContent = '去重新登录';
+        } else if (action === 'waiting') {
+          xiaohongshuElements.reloginButton.removeAttribute('hidden');
+          xiaohongshuElements.reloginButton.disabled = true;
+          xiaohongshuElements.reloginButton.textContent = '等待扫码确认...';
+        } else {
+          xiaohongshuElements.reloginButton.setAttribute('hidden', '');
+        }
+      }
+
+      /**
+       * 隐藏小红书状态信息
+       */
+      function hideXiaohongshuStatus() {
+        if (!xiaohongshuElements.status) return;
+        xiaohongshuElements.status.setAttribute('hidden', '');
+        xiaohongshuElements.statusText.textContent = '';
+        xiaohongshuElements.reloginButton?.setAttribute('hidden', '');
       }
 
       function stopPolling() {
@@ -1314,6 +1367,143 @@
         return loginStatusInitializePromise;
       }
 
+      // ==================== 小红书相关函数 ====================
+
+      let xiaohongshuLoginStatusInitializePromise = null;
+
+      /**
+       * 刷新小红书账号列表
+       */
+      async function refreshXiaohongshuAccounts() {
+        try {
+          const accounts = await fetchXiaohongshuAccounts();
+          if (!accounts || accounts.length === 0) {
+            console.warn('[editor] 小红书账号列表为空');
+            return;
+          }
+
+          const previousValue = xiaohongshuElements.select.value;
+          xiaohongshuElements.select.innerHTML = '';
+          accounts.forEach((account) => {
+            const option = document.createElement('option');
+            option.value = account.account_id || account.id;
+            option.textContent = account.account_name || account.name || account.account_id || account.id;
+            xiaohongshuElements.select.appendChild(option);
+          });
+
+          if (previousValue && accounts.some((item) => (item.account_id || item.id) === previousValue)) {
+            xiaohongshuElements.select.value = previousValue;
+          } else if (accounts.length > 0) {
+            // 如果没有之前的选中值，默认选择第一个
+            xiaohongshuElements.select.value = accounts[0].account_id || accounts[0].id;
+          }
+        } catch (error) {
+          console.error('[editor] 获取小红书账号列表失败', error);
+        }
+      }
+
+      /**
+       * 刷新小红书登录状态
+       */
+      async function refreshXiaohongshuLoginStatus() {
+        if (!xiaohongshuElements.select) return;
+
+        const selectedAccountId = xiaohongshuElements.select.value;
+        if (!selectedAccountId) {
+          hideXiaohongshuStatus();
+          return;
+        }
+
+        try {
+          const loginInfo = await getXiaohongshuLoginStatus(selectedAccountId);
+          const status = loginInfo?.status || 'expired';
+
+          // 支持多种登录状态值：active（后端返回）、authenticated、logged_in
+          if (status === 'active' || status === 'authenticated' || status === 'logged_in') {
+            hideXiaohongshuStatus();
+            return;
+          }
+
+          if (status === 'pending') {
+            showXiaohongshuStatus({ message: '等待扫码确认...', action: 'waiting', variant: 'info' });
+            return;
+          }
+
+          showXiaohongshuStatus({ message: '账号登录状态异常，请重新登录', action: 'relogin' });
+        } catch (error) {
+          console.error('[editor] 获取小红书登录状态失败', error);
+          showXiaohongshuStatus({ message: '无法获取登录状态，请稍后重试', action: 'relogin' });
+        }
+      }
+
+      /**
+       * 初始化小红书通道配置
+       */
+      async function initializeXiaohongshuConfig() {
+        try {
+          await refreshXiaohongshuAccounts();
+          await refreshXiaohongshuLoginStatus();
+        } finally {
+          xiaohongshuLoginStatusInitializePromise = null;
+        }
+      }
+
+      /**
+       * 确保小红书配置已加载
+       */
+      function ensureXiaohongshuInitialLoad() {
+        if (!xiaohongshuLoginStatusInitializePromise) {
+          xiaohongshuLoginStatusInitializePromise = initializeXiaohongshuConfig();
+        }
+        return xiaohongshuLoginStatusInitializePromise;
+      }
+
+      /**
+       * 启动小红书登录流程
+       */
+      async function startXiaohongshuLoginFlow() {
+        if (!xiaohongshuElements.select) return;
+        const selectedAccountId = xiaohongshuElements.select.value;
+        if (!selectedAccountId) {
+          alert('请先选择账号');
+          return;
+        }
+
+        try {
+          xiaohongshuElements.reloginButton.disabled = true;
+          xiaohongshuElements.reloginButton.textContent = '启动登录中...';
+
+          // 小红书登录是同步的，会等待用户扫码完成后才返回
+          showXiaohongshuStatus({ message: '浏览器将自动打开登录页面，请使用小红书APP扫码登录', action: 'waiting', variant: 'info' });
+          
+          const sessionInfo = await startXiaohongshuLoginSession(selectedAccountId);
+          if (!sessionInfo) {
+            showXiaohongshuStatus({ message: '无法启动登录会话，请稍后重试', action: 'relogin' });
+            return;
+          }
+
+          // 登录成功（API返回成功说明用户已完成扫码登录）
+          // 注意：sessionInfo不为null就说明登录流程已启动，success字段表示是否成功
+          if (sessionInfo && sessionInfo.success !== false) {
+            hideXiaohongshuStatus();
+            // 刷新登录状态以更新UI
+            await refreshXiaohongshuLoginStatus();
+            alert('登录成功！');
+          } else {
+            showXiaohongshuStatus({ message: '登录失败，请重新登录', action: 'relogin' });
+          }
+        } catch (error) {
+          console.error('[editor] 启动小红书登录流程失败', error);
+          showXiaohongshuStatus({ message: '启动登录流程失败，请稍后重试', action: 'relogin' });
+        } finally {
+          // 恢复按钮状态
+          if (xiaohongshuElements.reloginButton) {
+            xiaohongshuElements.reloginButton.disabled = false;
+            xiaohongshuElements.reloginButton.textContent = '去重新登录';
+          }
+        }
+      }
+
       zhihuElements.reloginButton?.addEventListener('click', () => {
         startZhihuLoginFlow();
       });
@@ -1337,9 +1527,72 @@
         await ensureInitialLoad();
       });
 
+      // 小红书刷新按钮事件处理
+      const xiaohongshuRefreshButton = document.querySelector('.channel-refresh[data-channel="xiaohongshu"]');
+      if (xiaohongshuRefreshButton) {
+        console.log('[editor] 小红书刷新按钮已找到，绑定事件监听器');
+        xiaohongshuRefreshButton.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[editor] 小红书刷新按钮被点击');
+          try {
+            const originalText = xiaohongshuRefreshButton.textContent;
+            xiaohongshuRefreshButton.disabled = true;
+            xiaohongshuRefreshButton.textContent = '刷新中...';
+            xiaohongshuRefreshButton.setAttribute('aria-busy', 'true');
+            
+            console.log('[editor] 开始刷新小红书配置...');
+            await ensureXiaohongshuInitialLoad();
+            console.log('[editor] 小红书配置刷新完成');
+            
+            xiaohongshuRefreshButton.disabled = false;
+            xiaohongshuRefreshButton.textContent = originalText;
+            xiaohongshuRefreshButton.removeAttribute('aria-busy');
+            sidebarMeta.textContent = `上次同步：${new Date().toLocaleTimeString()}`;
+          } catch (error) {
+            console.error('[editor] 刷新小红书配置失败', error);
+            xiaohongshuRefreshButton.disabled = false;
+            xiaohongshuRefreshButton.textContent = '刷新配置';
+            xiaohongshuRefreshButton.removeAttribute('aria-busy');
+            alert('刷新配置失败：' + (error.message || '未知错误'));
+          }
+        });
+      } else {
+        console.warn('[editor] 警告：未找到小红书刷新按钮！');
+      }
+
+      // 小红书重新登录按钮事件处理
+      xiaohongshuElements.reloginButton?.addEventListener('click', () => {
+        startXiaohongshuLoginFlow();
+      });
+
+      // 小红书账号选择下拉框事件处理
+      xiaohongshuElements.select?.addEventListener('change', async () => {
+        await refreshXiaohongshuLoginStatus();
+      });
+
+      // 小红书开关事件处理
+      const xiaohongshuToggle = document.querySelector('.channel-toggle-input[data-channel="xiaohongshu"]');
+      xiaohongshuToggle?.addEventListener('change', async (event) => {
+        if (event.target.checked) {
+          await ensureXiaohongshuInitialLoad();
+        }
+      });
+
       const refreshAllTrigger = document.getElementById('refreshAllChannels');
       refreshAllTrigger?.addEventListener('click', async () => {
-        await ensureInitialLoad();
+        // 刷新所有已开启的通道
+        const zhihuToggle = document.querySelector('.channel-toggle-input[data-channel="zhihu"]');
+        const xiaohongshuToggle = document.querySelector('.channel-toggle-input[data-channel="xiaohongshu"]');
+        
+        if (zhihuToggle?.checked) {
+          await ensureInitialLoad();
+        }
+        if (xiaohongshuToggle?.checked) {
+          await ensureXiaohongshuInitialLoad();
+        }
+        
+        sidebarMeta.textContent = `上次同步：${new Date().toLocaleTimeString()}`;
       });
 
       const originalSetChannelExpanded = setChannelExpanded;
@@ -1347,6 +1600,8 @@
         originalSetChannelExpanded.call(null, channelId, expanded);
         if (channelId === 'zhihu' && expanded) {
           await ensureInitialLoad();
+        } else if (channelId === 'xiaohongshu' && expanded) {
+          await ensureXiaohongshuInitialLoad();
         }
       };
 

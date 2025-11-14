@@ -34,10 +34,10 @@ npm start
 
 ```bash
 cd editor
-npx live-server --port=8080 --open=/index.html
+npx live-server --port=8080 --open=/
 ```
 
-浏览器会自动打开 `http://localhost:8080/index.html`
+浏览器会自动打开 `http://localhost:8080/`（会自动加载 `index.html`）
 
 ## 第三步：测试功能
 

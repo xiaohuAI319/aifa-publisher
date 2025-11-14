@@ -61,11 +61,24 @@ app.get('/api/accounts', async (req, res) => {
 /**
  * GET /api/login/status
  * 查询登录状态
- * Query参数: accountId
+ * Query参数: accountId 或 sessionToken
+ * 注意：sessionToken仅用于轮询，实际查询使用accountId
  */
 app.get('/api/login/status', async (req, res) => {
   try {
-    const { accountId } = req.query;
+    const { accountId, sessionToken } = req.query;
+    
+    // 如果提供了sessionToken但没有accountId，返回pending状态（表示正在登录中）
+    // 这是因为小红书登录是同步的，sessionToken只是临时标识
+    if (sessionToken && !accountId) {
+      // 小红书登录是同步的，如果收到sessionToken查询，说明登录可能还在进行中
+      // 返回pending状态，让前端继续等待
+      return res.json({ 
+        success: true, 
+        status: 'pending',
+        message: '登录进行中，请等待...'
+      });
+    }
     
     if (!accountId) {
       return res.status(400).json({ success: false, error: '缺少accountId参数' });
@@ -124,6 +137,23 @@ app.post('/api/publish', async (req, res) => {
 // 健康检查接口
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'xiaohongshu-publisher', timestamp: new Date().toISOString() });
+});
+
+// 404处理中间件（必须在所有路由之后）
+app.use((req, res) => {
+  console.warn(`[404] 未找到路由: ${req.method} ${req.url}`);
+  res.status(404).json({ 
+    success: false, 
+    error: 'Not Found',
+    message: `路由 ${req.method} ${req.url} 不存在`,
+    availableRoutes: [
+      'GET /api/accounts',
+      'GET /api/login/status',
+      'POST /api/login/start',
+      'POST /api/publish',
+      'GET /health'
+    ]
+  });
 });
 
 // 启动服务器

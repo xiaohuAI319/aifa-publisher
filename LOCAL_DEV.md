@@ -27,7 +27,7 @@ python3 -m http.server 8080
 npx http-server editor -p 8080 -c-1
 
 # 方式3: 使用 live-server（支持热重载）
-npx live-server editor --port=8080 --open=/index.html
+npx live-server editor --port=8080 --open=/
 ```
 
 #### 2. 访问本地地址
@@ -79,7 +79,7 @@ npx live-server editor --port=8080 --open=/index.html
 ```bash
 # 在项目根目录
 cd editor
-npx live-server --port=8080 --open=/index.html
+npx live-server --port=8080 --open=/
 ```
 
 #### 步骤 2：加载 Chrome 扩展
@@ -259,7 +259,7 @@ window.addEventListener('message', (e) => {
 使用 `live-server` 可以实现发布面板的热重载：
 
 ```bash
-npx live-server editor --port=8080 --open=/index.html
+npx live-server editor --port=8080 --open=/
 ```
 
 修改 HTML/JS 文件后，浏览器会自动刷新。

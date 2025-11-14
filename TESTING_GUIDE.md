@@ -36,7 +36,7 @@ npm start
 **终端 2 - 启动前端编辑器**：
 ```bash
 cd editor
-npx live-server --port=8080 --open=/index.html
+npx live-server --port=8080 --open=/
 ```
 
 浏览器会自动打开 `http://localhost:8080/index.html`
