@@ -1104,17 +1104,48 @@
     }
 
     document.getElementById('publishBtn').addEventListener('click', async () => {
+      const publishBtn = document.getElementById('publishBtn');
+      const xiaohongshuPublishButton = document.querySelector('.channel-publish[data-channel="xiaohongshu"]');
+      
+      // 保存原始按钮文本
+      const originalPublishBtnText = publishBtn.textContent;
+      const originalXhsPublishBtnText = xiaohongshuPublishButton ? xiaohongshuPublishButton.textContent : '';
+      
+      // 恢复按钮状态的函数
+      const restoreButtons = () => {
+        publishBtn.disabled = false;
+        publishBtn.textContent = originalPublishBtnText;
+        publishBtn.removeAttribute('aria-busy');
+        
+        if (xiaohongshuPublishButton) {
+          xiaohongshuPublishButton.disabled = false;
+          xiaohongshuPublishButton.textContent = originalXhsPublishBtnText;
+          xiaohongshuPublishButton.removeAttribute('aria-busy');
+        }
+      };
+      
       try {
         const task = createTaskPayload();
         const platform = task.platform;
 
         if (platform === 'xiaohongshu') {
+          // 更新按钮状态为"发布中"
+          publishBtn.disabled = true;
+          publishBtn.textContent = '发布中';
+          publishBtn.setAttribute('aria-busy', 'true');
+          
+          if (xiaohongshuPublishButton) {
+            xiaohongshuPublishButton.disabled = true;
+            xiaohongshuPublishButton.textContent = '发布中';
+            xiaohongshuPublishButton.setAttribute('aria-busy', 'true');
+          }
+          
           // 小红书：调用本地Node.js服务
           const result = await publishToXiaohongshu(task);
           // 保存发布历史
           saveHistoryAfterPublish(task, result);
-          // 显示成功提示
-          alert(result.message || '发布成功！');
+          // 不显示弹窗，直接恢复按钮状态
+          restoreButtons();
         } else {
           // 知乎：使用Chrome扩展（原有逻辑）
           const targetWindow = openZhihuWritePage();
@@ -1122,7 +1153,7 @@
         }
       } catch (error) {
         console.error('发布失败:', error);
-        alert('发布失败：' + (error.message || '未知错误'));
+        // 不显示弹窗，直接恢复按钮状态
         
         // 即使发布失败也尝试保存历史（用于记录失败原因）
         try {
@@ -1134,6 +1165,9 @@
         } catch (historyError) {
           console.error('保存失败历史失败:', historyError);
         }
+        
+        // 恢复按钮状态
+        restoreButtons();
       }
     });
 
@@ -1747,11 +1781,23 @@
               }
             };
 
-            // 更新按钮状态
+            // 获取"一键发布"按钮
+            const publishBtn = document.getElementById('publishBtn');
+            
+            // 保存原始按钮文本
             const originalText = xiaohongshuPublishButton.textContent;
+            const originalPublishBtnText = publishBtn ? publishBtn.textContent : '';
+            
+            // 更新两个按钮状态为"发布中"
             xiaohongshuPublishButton.disabled = true;
-            xiaohongshuPublishButton.textContent = '发布中...';
+            xiaohongshuPublishButton.textContent = '发布中';
             xiaohongshuPublishButton.setAttribute('aria-busy', 'true');
+            
+            if (publishBtn) {
+              publishBtn.disabled = true;
+              publishBtn.textContent = '发布中';
+              publishBtn.setAttribute('aria-busy', 'true');
+            }
 
             console.log('[editor] 开始发布到小红书...', task);
             
@@ -1761,24 +1807,35 @@
             // 保存发布历史
             saveHistoryAfterPublish(task, result);
             
-            // 显示成功提示
-            alert(result.message || '发布成功！');
-            
-            // 恢复按钮状态
+            // 不显示弹窗，直接恢复按钮状态
             xiaohongshuPublishButton.disabled = false;
             xiaohongshuPublishButton.textContent = originalText;
             xiaohongshuPublishButton.removeAttribute('aria-busy');
             
+            if (publishBtn) {
+              publishBtn.disabled = false;
+              publishBtn.textContent = originalPublishBtnText;
+              publishBtn.removeAttribute('aria-busy');
+            }
+            
           } catch (error) {
             console.error('[editor] 发布失败:', error);
-            alert('发布失败：' + (error.message || '未知错误'));
+            // 不显示弹窗，直接恢复按钮状态
             
             // 恢复按钮状态
             const xiaohongshuPublishButton = document.querySelector('.channel-publish[data-channel="xiaohongshu"]');
+            const publishBtn = document.getElementById('publishBtn');
+            
             if (xiaohongshuPublishButton) {
               xiaohongshuPublishButton.disabled = false;
               xiaohongshuPublishButton.textContent = '发布';
               xiaohongshuPublishButton.removeAttribute('aria-busy');
+            }
+            
+            if (publishBtn) {
+              publishBtn.disabled = false;
+              publishBtn.textContent = '一键发布';
+              publishBtn.removeAttribute('aria-busy');
             }
             
             // 即使发布失败也尝试保存历史（用于记录失败原因）

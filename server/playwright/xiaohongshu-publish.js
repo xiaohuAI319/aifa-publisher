@@ -460,8 +460,9 @@ export async function publishToXiaohongshu(taskPayload) {
     }
 
     // 等待编辑页面完全加载
+    console.log('等待编辑页面完全加载...');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000); // 增加等待时间到3秒
 
     // 关闭其他可能的网页弹窗或引导提示（文件选择对话框已由监听器自动处理）
     try {
@@ -493,53 +494,136 @@ export async function publishToXiaohongshu(taskPayload) {
     
     // 按ESC键确保所有对话框都关闭
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
+
+    // 滚动到页面顶部，确保标题输入框可见
+    console.log('滚动到页面顶部...');
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(1000);
 
     // 步骤4: 填写标题（位置1：标题输入框）
     console.log('步骤4: 正在查找标题输入框（位置1）...');
     const titleSelectors = [
+      // 优先尝试精确的placeholder匹配
       'input[placeholder*="输入标题"]',
       'input[placeholder*="标题"]',
       'textarea[placeholder*="输入标题"]',
       'textarea[placeholder*="标题"]',
       'div[contenteditable="true"][placeholder*="输入标题"]',
       'div[contenteditable="true"][placeholder*="标题"]',
-      'input[type="text"]',
+      // 尝试通过aria-label查找
+      'input[aria-label*="标题"]',
+      'textarea[aria-label*="标题"]',
+      'div[contenteditable="true"][aria-label*="标题"]',
+      // 尝试通过data属性查找
+      'input[data-placeholder*="标题"]',
+      'textarea[data-placeholder*="标题"]',
+      // 尝试通过类名查找
       '[class*="title-input"]',
       '[class*="title"] input',
-      // 更精确的选择器，避免选中其他输入框
+      '[class*="title"] textarea',
+      '[class*="editor-title"]',
+      '[class*="article-title"]',
+      // 尝试通过ID查找
+      'input#title',
+      'textarea#title',
+      // 通用的文本输入框（排除文件输入）
       'input[type="text"]:not([type="file"]):not([type="hidden"])',
-      'input:not([type="file"]):not([type="hidden"])[placeholder*="标题"]'
+      'input:not([type="file"]):not([type="hidden"])[placeholder*="标题"]',
+      // 最后尝试所有可见的input和textarea（排除文件输入）
+      'input:not([type="file"]):not([type="hidden"]):not([type="password"]):not([type="email"])',
+      'textarea'
     ];
 
     let titleInput = null;
-    for (const selector of titleSelectors) {
-      try {
-        console.log(`尝试选择器: ${selector}`);
-        titleInput = await page.waitForSelector(selector, { 
-          timeout: 5000,
-          state: 'visible'
+    let usedSelector = null;
+    
+    // 增加重试机制，最多尝试3次
+    const maxRetries = 3;
+    for (let retry = 0; retry < maxRetries; retry++) {
+      if (retry > 0) {
+        console.log(`第 ${retry + 1} 次尝试查找标题输入框...`);
+        // 再次滚动到顶部
+        await page.evaluate(() => {
+          window.scrollTo(0, 0);
         });
-        if (titleInput && await titleInput.isVisible()) {
-          // 确保不是文件输入框
-          const inputType = await titleInput.getAttribute('type').catch(() => '');
-          if (inputType === 'file') {
-            console.log(`跳过文件输入框: ${selector}`);
-            continue;
+        await page.waitForTimeout(2000);
+      }
+      
+      for (const selector of titleSelectors) {
+        try {
+          console.log(`尝试选择器: ${selector}`);
+          titleInput = await page.waitForSelector(selector, { 
+            timeout: 8000, // 增加超时时间到8秒
+            state: 'visible'
+          });
+          
+          if (titleInput) {
+            // 检查元素是否真的可见
+            const isVisible = await titleInput.isVisible().catch(() => false);
+            if (!isVisible) {
+              console.log(`元素存在但不可见: ${selector}`);
+              continue;
+            }
+            
+            // 确保不是文件输入框
+            const inputType = await titleInput.getAttribute('type').catch(() => '');
+            if (inputType === 'file') {
+              console.log(`跳过文件输入框: ${selector}`);
+              continue;
+            }
+            
+            // 检查元素是否在视口中
+            const boundingBox = await titleInput.boundingBox().catch(() => null);
+            if (!boundingBox) {
+              console.log(`元素不在视口中: ${selector}`);
+              continue;
+            }
+            
+            // 滚动到元素位置
+            await titleInput.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(500);
+            
+            console.log(`✅ 找到标题输入框，使用选择器: ${selector}`);
+            usedSelector = selector;
+            break;
           }
-          console.log(`找到标题输入框，使用选择器: ${selector}`);
-          break;
+        } catch (e) {
+          console.log(`选择器 ${selector} 未找到: ${e.message}`);
+          continue;
         }
-      } catch (e) {
-        console.log(`选择器 ${selector} 未找到，继续尝试下一个...`);
-        continue;
+      }
+      
+      if (titleInput && usedSelector) {
+        break; // 找到了，退出重试循环
       }
     }
 
     if (!titleInput) {
+      // 保存更详细的调试信息
       const screenshotPath = path.join(__dirname, '../../data/debug-screenshot-title.png');
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.error(`已保存页面截图到: ${screenshotPath}`);
+      
+      // 尝试获取页面HTML结构（仅标题相关部分）
+      try {
+        const pageHTML = await page.evaluate(() => {
+          const inputs = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]'));
+          return inputs.map(el => ({
+            tag: el.tagName,
+            type: el.type || '',
+            placeholder: el.placeholder || '',
+            className: el.className || '',
+            id: el.id || '',
+            ariaLabel: el.getAttribute('aria-label') || ''
+          })).slice(0, 10); // 只取前10个
+        });
+        console.error('页面中的输入框信息:', JSON.stringify(pageHTML, null, 2));
+      } catch (e) {
+        console.error('获取页面HTML结构失败:', e.message);
+      }
       
       const pageTitle = await page.title().catch(() => '无法获取页面标题');
       throw new Error(
