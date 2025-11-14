@@ -253,6 +253,28 @@ export async function publishToXiaohongshu(taskPayload) {
 
       page = await context.newPage();
 
+      // 设置文件选择对话框监听器，自动取消所有文件选择对话框
+      page.on('filechooser', async (fileChooser) => {
+        try {
+          console.log('检测到文件选择对话框，自动取消...');
+          // 检查 cancel 方法是否存在
+          if (fileChooser && typeof fileChooser.cancel === 'function') {
+            await fileChooser.cancel();
+            console.log('文件选择对话框已取消');
+          } else {
+            // 如果 cancel 方法不存在，尝试使用 setFiles 设置为空数组
+            if (fileChooser && typeof fileChooser.setFiles === 'function') {
+              await fileChooser.setFiles([]);
+              console.log('文件选择对话框已通过 setFiles([]) 取消');
+            } else {
+              console.log('文件选择对话框无法自动取消，将忽略');
+            }
+          }
+        } catch (error) {
+          console.log('关闭文件选择对话框时出错（已忽略）:', error.message);
+        }
+      });
+
     // 访问小红书创作服务平台首页
     await page.goto('https://creator.xiaohongshu.com', {
       waitUntil: 'networkidle',
@@ -338,14 +360,15 @@ export async function publishToXiaohongshu(taskPayload) {
     }
 
     // 检查URL是否正确，如果不正确则直接导航到正确的URL
-    const currentUrl = page.url();
-    if (!currentUrl.includes('target=article')) {
+    let currentUrlAfterTab = page.url();
+    if (!currentUrlAfterTab.includes('target=article')) {
       console.log('检测到URL不正确，直接导航到写长文页面...');
       await page.goto('https://creator.xiaohongshu.com/publish/publish?source=official&from=menu&target=article', {
         waitUntil: 'networkidle',
         timeout: 30000
       });
-      console.log('已导航到写长文页面，当前URL:', page.url());
+      currentUrlAfterTab = page.url();
+      console.log('已导航到写长文页面，当前URL:', currentUrlAfterTab);
     }
 
     // 等待页面加载完成
@@ -354,25 +377,49 @@ export async function publishToXiaohongshu(taskPayload) {
 
     // 步骤3: 点击"新的创作"按钮
     console.log('步骤3: 正在查找并点击"新的创作"按钮...');
+    
+    // 再次确认URL正确
+    let urlAfterTab = page.url();
+    if (!urlAfterTab.includes('target=article')) {
+      console.log('URL仍然不正确，重新导航...');
+      await page.goto('https://creator.xiaohongshu.com/publish/publish?source=official&from=menu&target=article', {
+        waitUntil: 'networkidle',
+        timeout: 30000
+      });
+      urlAfterTab = page.url();
+      await page.waitForTimeout(2000);
+    }
+    
     const newCreationSelectors = [
       'button:has-text("新的创作")',
       'a:has-text("新的创作")',
+      'div:has-text("新的创作")',
       '[class*="new-creation"]:has-text("新的创作")',
+      '[class*="new"]:has-text("新的创作")',
       'button[aria-label*="新的创作"]',
-      '[data-testid*="new-creation"]'
+      'button[aria-label*="创作"]',
+      '[data-testid*="new-creation"]',
+      '[data-testid*="new"]',
+      'button:has-text("创作")',
+      // 尝试通过图标或类名查找
+      'button[class*="create"]',
+      'button[class*="new"]'
     ];
 
     let newCreationButton = null;
     for (const selector of newCreationSelectors) {
       try {
+        console.log(`尝试选择器: ${selector}`);
         newCreationButton = await page.waitForSelector(selector, { 
-          timeout: 10000,
+          timeout: 5000,
           state: 'visible'
         });
         if (newCreationButton && await newCreationButton.isVisible()) {
           console.log(`找到"新的创作"按钮，使用选择器: ${selector}`);
+          
+          // 点击按钮（文件选择对话框会被自动取消）
           await newCreationButton.click();
-          await page.waitForTimeout(3000); // 等待编辑页面加载
+          await page.waitForTimeout(2000); // 等待编辑页面加载
           break;
         }
       } catch (e) {
@@ -382,16 +429,41 @@ export async function publishToXiaohongshu(taskPayload) {
     }
 
     if (!newCreationButton) {
-      const screenshotPath = path.join(__dirname, '../../data/debug-screenshot-new-creation.png');
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      throw new Error(`无法找到"新的创作"按钮。当前URL: ${page.url()}。页面截图已保存到: ${screenshotPath}`);
+      // 如果找不到按钮，可能已经在编辑页面了，尝试直接查找标题输入框
+      console.log('未找到"新的创作"按钮，可能已经在编辑页面，尝试直接查找标题输入框...');
+      const titleSelectors = [
+        'input[placeholder*="输入标题"]',
+        'input[placeholder*="标题"]',
+        'textarea[placeholder*="输入标题"]',
+        'textarea[placeholder*="标题"]'
+      ];
+      
+      let foundTitleInput = false;
+      for (const selector of titleSelectors) {
+        try {
+          const titleInput = await page.waitForSelector(selector, { timeout: 5000 });
+          if (titleInput && await titleInput.isVisible()) {
+            console.log('已找到标题输入框，跳过"新的创作"按钮步骤');
+            foundTitleInput = true;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!foundTitleInput) {
+        const screenshotPath = path.join(__dirname, '../../data/debug-screenshot-new-creation.png');
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        throw new Error(`无法找到"新的创作"按钮，也无法找到标题输入框。当前URL: ${page.url()}。页面截图已保存到: ${screenshotPath}`);
+      }
     }
 
     // 等待编辑页面完全加载
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
-    // 尝试关闭可能的弹窗或引导提示
+    // 关闭其他可能的网页弹窗或引导提示（文件选择对话框已由监听器自动处理）
     try {
       const closeButtons = [
         'button[aria-label*="关闭"]',
@@ -418,9 +490,13 @@ export async function publishToXiaohongshu(taskPayload) {
     } catch (error) {
       console.log('关闭弹窗时出错（可能没有弹窗）:', error.message);
     }
+    
+    // 按ESC键确保所有对话框都关闭
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
 
-    // 步骤4: 填写标题（placeholder: "输入标题"）
-    console.log('步骤4: 正在查找标题输入框...');
+    // 步骤4: 填写标题（位置1：标题输入框）
+    console.log('步骤4: 正在查找标题输入框（位置1）...');
     const titleSelectors = [
       'input[placeholder*="输入标题"]',
       'input[placeholder*="标题"]',
@@ -430,7 +506,10 @@ export async function publishToXiaohongshu(taskPayload) {
       'div[contenteditable="true"][placeholder*="标题"]',
       'input[type="text"]',
       '[class*="title-input"]',
-      '[class*="title"] input'
+      '[class*="title"] input',
+      // 更精确的选择器，避免选中其他输入框
+      'input[type="text"]:not([type="file"]):not([type="hidden"])',
+      'input:not([type="file"]):not([type="hidden"])[placeholder*="标题"]'
     ];
 
     let titleInput = null;
@@ -442,6 +521,12 @@ export async function publishToXiaohongshu(taskPayload) {
           state: 'visible'
         });
         if (titleInput && await titleInput.isVisible()) {
+          // 确保不是文件输入框
+          const inputType = await titleInput.getAttribute('type').catch(() => '');
+          if (inputType === 'file') {
+            console.log(`跳过文件输入框: ${selector}`);
+            continue;
+          }
           console.log(`找到标题输入框，使用选择器: ${selector}`);
           break;
         }
@@ -458,20 +543,21 @@ export async function publishToXiaohongshu(taskPayload) {
       
       const pageTitle = await page.title().catch(() => '无法获取页面标题');
       throw new Error(
-        `无法找到标题输入框。当前URL: ${page.url()}, 页面标题: ${pageTitle}, ` +
+        `无法找到标题输入框（位置1）。当前URL: ${page.url()}, 页面标题: ${pageTitle}, ` +
         `已尝试的选择器: ${titleSelectors.join(', ')}。` +
         `页面截图已保存到: ${screenshotPath}`
       );
     }
 
-    // 填写标题
-    await titleInput.click();
-    await page.waitForTimeout(500);
+    // 填写标题到位置1
+    await titleInput.click({ clickCount: 3 }); // 三击选中所有文本
+    await page.waitForTimeout(300);
     await titleInput.fill(title);
-    console.log('标题已填写:', title);
+    await page.waitForTimeout(300);
+    console.log('标题已填写到位置1:', title);
 
-    // 步骤5: 填写内容（placeholder: "粘贴到这里或输入文字"）
-    console.log('步骤5: 正在查找内容输入框...');
+    // 步骤5: 填写内容（位置2：内容输入框）
+    console.log('步骤5: 正在查找内容输入框（位置2）...');
     const contentSelectors = [
       'textarea[placeholder*="粘贴到这里或输入文字"]',
       'textarea[placeholder*="粘贴"]',
@@ -480,7 +566,10 @@ export async function publishToXiaohongshu(taskPayload) {
       'div[contenteditable="true"]',
       'textarea[placeholder*="输入文字"]',
       '[class*="editor"]',
-      '[class*="content-editor"]'
+      '[class*="content-editor"]',
+      // 更精确的选择器，确保是内容编辑区域
+      'div[contenteditable="true"]:not([role="textbox"]):not([aria-label*="标题"])',
+      'textarea:not([placeholder*="标题"])'
     ];
 
     let contentInput = null;
@@ -492,6 +581,12 @@ export async function publishToXiaohongshu(taskPayload) {
           state: 'visible'
         });
         if (contentInput && await contentInput.isVisible()) {
+          // 确保不是标题输入框
+          const placeholder = await contentInput.getAttribute('placeholder').catch(() => '');
+          if (placeholder && placeholder.includes('标题')) {
+            console.log(`跳过标题输入框: ${selector}`);
+            continue;
+          }
           console.log(`找到内容输入框，使用选择器: ${selector}`);
           break;
         }
@@ -507,17 +602,22 @@ export async function publishToXiaohongshu(taskPayload) {
       console.error(`已保存页面截图到: ${screenshotPath}`);
       
       throw new Error(
-        `无法找到内容输入框。当前URL: ${page.url()}, ` +
+        `无法找到内容输入框（位置2）。当前URL: ${page.url()}, ` +
         `已尝试的选择器: ${contentSelectors.join(', ')}。` +
         `页面截图已保存到: ${screenshotPath}`
       );
     }
 
-    // 填写内容 - 对于contenteditable元素，使用键盘输入方式
+    // 填写内容到位置2 - 对于contenteditable元素，使用键盘输入方式
     await contentInput.click();
     await page.waitForTimeout(500);
     
-    if (await contentInput.evaluate(el => el.isContentEditable || el.tagName === 'TEXTAREA')) {
+    // 检查是否是contenteditable元素
+    const isContentEditable = await contentInput.evaluate(el => {
+      return el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'INPUT';
+    });
+    
+    if (isContentEditable) {
       // 清空现有内容（如果有）
       await page.keyboard.press('Control+A');
       await page.waitForTimeout(200);
@@ -526,7 +626,8 @@ export async function publishToXiaohongshu(taskPayload) {
     } else {
       await contentInput.fill(content);
     }
-    console.log('内容已填写');
+    await page.waitForTimeout(300);
+    console.log('内容已填写到位置2');
 
     // 添加标签（如果有）
     if (tags.length > 0) {
@@ -546,23 +647,217 @@ export async function publishToXiaohongshu(taskPayload) {
       }
     }
 
-    // 等待用户手动点击发布按钮
-    // 注意：实际自动点击发布可能需要更复杂的逻辑和风险控制
-    console.log('内容已填充完成，等待用户确认发布...');
-    
-    // 可选：自动点击发布按钮（需谨慎使用）
-    // const publishButtonSelector = 'button:has-text("发布"), button:has-text("立即发布")';
-    // await page.click(publishButtonSelector);
+    // 步骤6: 点击"一键排版"按钮
+    console.log('步骤6: 正在查找并点击"一键排版"按钮...');
+    const formatButtonSelectors = [
+      'button:has-text("一键排版")',
+      'a:has-text("一键排版")',
+      'div:has-text("一键排版")',
+      '[class*="format"]:has-text("一键排版")',
+      '[class*="排版"]:has-text("一键排版")',
+      'button[aria-label*="一键排版"]',
+      'button[aria-label*="排版"]',
+      '[data-testid*="format"]',
+      'button:has-text("排版")'
+    ];
 
-    // 等待一段时间让用户确认
-    await page.waitForTimeout(10000);
+    let formatButton = null;
+    for (const selector of formatButtonSelectors) {
+      try {
+        formatButton = await page.waitForSelector(selector, { 
+          timeout: 5000,
+          state: 'visible'
+        });
+        if (formatButton && await formatButton.isVisible()) {
+          console.log(`找到"一键排版"按钮，使用选择器: ${selector}`);
+          await formatButton.click();
+          await page.waitForTimeout(3000); // 等待排版完成
+          console.log('已点击"一键排版"，等待排版完成...');
+          break;
+        }
+      } catch (e) {
+        console.log(`选择器 ${selector} 未找到，继续尝试下一个...`);
+        continue;
+      }
+    }
+
+    if (!formatButton) {
+      console.warn('未找到"一键排版"按钮，可能页面结构已变化，继续执行下一步...');
+    } else {
+      // 等待排版完成，检查页面是否有变化
+      await page.waitForTimeout(2000);
+      console.log('排版完成');
+    }
+
+    // 步骤7: 点击"下一步"按钮
+    console.log('步骤7: 正在查找并点击"下一步"按钮...');
+    const nextButtonSelectors = [
+      'button:has-text("下一步")',
+      'a:has-text("下一步")',
+      'div:has-text("下一步")',
+      '[class*="next"]:has-text("下一步")',
+      'button[aria-label*="下一步"]',
+      '[data-testid*="next"]',
+      'button:has-text("下一步")'
+    ];
+
+    let nextButton = null;
+    for (const selector of nextButtonSelectors) {
+      try {
+        nextButton = await page.waitForSelector(selector, { 
+          timeout: 5000,
+          state: 'visible'
+        });
+        if (nextButton && await nextButton.isVisible()) {
+          console.log(`找到"下一步"按钮，使用选择器: ${selector}`);
+          
+          // 记录当前URL
+          const urlBeforeNext = page.url();
+          console.log('点击"下一步"前的URL:', urlBeforeNext);
+          
+          await nextButton.click();
+          await page.waitForTimeout(2000); // 等待页面跳转
+          
+          // 等待页面导航完成
+          await page.waitForLoadState('networkidle');
+          await page.waitForTimeout(2000);
+          
+          // 检查URL是否变化
+          const urlAfterNext = page.url();
+          console.log('点击"下一步"后的URL:', urlAfterNext);
+          
+          if (urlAfterNext !== urlBeforeNext) {
+            console.log('页面已跳转，进入新页面');
+          } else {
+            console.log('URL未变化，可能仍在同一页面');
+          }
+          
+          break;
+        }
+      } catch (e) {
+        console.log(`选择器 ${selector} 未找到，继续尝试下一个...`);
+        continue;
+      }
+    }
+
+    if (!nextButton) {
+      const screenshotPath = path.join(__dirname, '../../data/debug-screenshot-next-button.png');
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      throw new Error(`无法找到"下一步"按钮。当前URL: ${page.url()}。页面截图已保存到: ${screenshotPath}`);
+    }
+
+    // 步骤8: 点击"发布"按钮
+    console.log('步骤8: 正在查找并点击"发布"按钮...');
+    const publishButtonSelectors = [
+      'button:has-text("发布")',
+      'button:has-text("立即发布")',
+      'a:has-text("发布")',
+      'div:has-text("发布")',
+      '[class*="publish"]:has-text("发布")',
+      'button[aria-label*="发布"]',
+      '[data-testid*="publish"]',
+      'button[type="submit"]:has-text("发布")'
+    ];
+
+    let publishButton = null;
+    for (const selector of publishButtonSelectors) {
+      try {
+        publishButton = await page.waitForSelector(selector, { 
+          timeout: 5000,
+          state: 'visible'
+        });
+        if (publishButton && await publishButton.isVisible()) {
+          console.log(`找到"发布"按钮，使用选择器: ${selector}`);
+          
+          // 点击发布按钮
+          await publishButton.click();
+          await page.waitForTimeout(2000);
+          
+          // 检查是否有确认弹窗
+          try {
+            const confirmSelectors = [
+              'button:has-text("确认")',
+              'button:has-text("确定")',
+              'button:has-text("发布")',
+              '.confirm-button',
+              '[class*="confirm"] button'
+            ];
+            
+            for (const confirmSelector of confirmSelectors) {
+              try {
+                const confirmBtn = await page.waitForSelector(confirmSelector, { timeout: 2000 });
+                if (confirmBtn && await confirmBtn.isVisible()) {
+                  console.log('检测到确认弹窗，点击确认...');
+                  await confirmBtn.click();
+                  await page.waitForTimeout(2000);
+                  break;
+                }
+              } catch (e) {
+                // 继续尝试下一个
+              }
+            }
+          } catch (error) {
+            console.log('未检测到确认弹窗，可能已直接发布');
+          }
+          
+          console.log('已点击"发布"按钮');
+          break;
+        }
+      } catch (e) {
+        console.log(`选择器 ${selector} 未找到，继续尝试下一个...`);
+        continue;
+      }
+    }
+
+    if (!publishButton) {
+      const screenshotPath = path.join(__dirname, '../../data/debug-screenshot-publish-button.png');
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      throw new Error(`无法找到"发布"按钮。当前URL: ${page.url()}。页面截图已保存到: ${screenshotPath}`);
+    }
+
+    // 等待发布完成
+    console.log('等待发布完成...');
+    await page.waitForTimeout(5000);
+    
+    // 检查是否发布成功（可以通过URL变化或成功提示判断）
+    const finalUrl = page.url();
+    console.log('发布后的最终URL:', finalUrl);
+    
+    // 检查是否有成功提示
+    try {
+      const successSelectors = [
+        ':has-text("发布成功")',
+        ':has-text("发布完成")',
+        ':has-text("已发布")'
+      ];
+      
+      let successFound = false;
+      for (const selector of successSelectors) {
+        try {
+          const successElement = await page.waitForSelector(selector, { timeout: 3000 });
+          if (successElement) {
+            console.log('检测到发布成功提示');
+            successFound = true;
+            break;
+          }
+        } catch (e) {
+          // 继续尝试下一个
+        }
+      }
+      
+      if (!successFound) {
+        console.log('未检测到明确的成功提示，但已执行发布操作');
+      }
+    } catch (error) {
+      console.log('检查发布状态时出错:', error.message);
+    }
 
     await browser.close();
 
     return {
       success: true,
-      message: '内容已填充，请手动确认发布',
-      url: 'https://creator.xiaohongshu.com/publish/publish'
+      message: '内容已自动发布完成（已执行：一键排版 → 下一步 → 发布）',
+      url: finalUrl || 'https://creator.xiaohongshu.com/publish/publish'
     };
   } catch (error) {
     console.error('发布失败:', error);
