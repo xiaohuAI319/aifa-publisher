@@ -13,7 +13,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+// 支持环境变量配置，默认值用于本地开发
+const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // 中间件
 app.use(cors()); // 允许跨域
@@ -157,10 +159,10 @@ app.use((req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log(`\n====================================`);
   console.log(`小红书发布服务已启动`);
-  console.log(`监听端口: http://localhost:${PORT}`);
+  console.log(`监听地址: http://${HOST}:${PORT}`);
   console.log(`====================================\n`);
   console.log(`可用接口:`);
   console.log(`  GET  /api/accounts        - 获取账号列表`);

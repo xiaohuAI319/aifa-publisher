@@ -116,7 +116,38 @@ export async function pollLoginSessionStatus(sessionToken) {
 
 // ==================== 小红书服务函数（使用本地Node.js服务） ====================
 
-const XIAOHONGSHU_API_BASE = 'http://localhost:3001/api';
+/**
+ * 根据环境自动确定 API 基础地址
+ * - 本地开发：使用 localhost:3001
+ * - 生产环境：使用当前域名（通过 Nginx 代理）或配置的环境变量
+ */
+function getXiaohongshuApiBase() {
+  // 优先使用环境变量配置（如果设置了）
+  if (window.XIAOHONGSHU_API_BASE) {
+    return window.XIAOHONGSHU_API_BASE;
+  }
+  
+  // 根据当前域名判断环境
+  const hostname = window.location.hostname;
+  
+  // 本地开发环境
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3001/api';
+  }
+  
+  // 生产环境：使用当前域名的 /api 路径（通过 Nginx 代理）
+  // 或者使用完整的 API 域名（如果配置了独立域名）
+  const protocol = window.location.protocol;
+  const port = window.location.port ? `:${window.location.port}` : '';
+  
+  // 如果 API 在独立域名，可以在这里配置
+  // 例如：return 'https://api.yourdomain.com/api';
+  
+  // 默认使用当前域名的 /api 路径
+  return `${protocol}//${hostname}${port}/api`;
+}
+
+const XIAOHONGSHU_API_BASE = getXiaohongshuApiBase();
 
 /**
  * 获取小红书账号列表（从本地JSON文件）

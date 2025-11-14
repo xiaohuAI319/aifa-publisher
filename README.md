@@ -46,8 +46,23 @@ aifa-publisher/
 ├── data/                     # 本地数据存储
 │   ├── xiaohongshu-cookies.json   # Cookie 存储
 │   └── xiaohongshu-accounts.json  # 账号配置
-├── README.md
-└── LOCAL_DEV.md             # 本地开发指南
+├── scripts/                  # 工具脚本
+│   ├── inspect_word_sections.py   # Word文档章节检查脚本
+│   └── parse_word_html.py         # Word HTML解析脚本
+├── docs/                     # 项目文档
+│   ├── 扩展作用说明.md            # Chrome扩展使用说明
+│   ├── todo_list.json            # 待办事项列表
+│   └── TODO_LIST_PLACEHOLDER      # 待办事项占位符
+├── archive/                  # 归档文件（旧版本、测试文件等）
+│   ├── aifa-*.html               # 旧版本HTML文件
+│   ├── cloudbase-*.html          # CloudBase测试文件
+│   └── editor-*.zip              # 编辑器备份压缩包
+├── README.md                 # 项目说明文档
+├── LOCAL_DEV.md             # 本地开发指南
+├── QUICK_START.md           # 快速开始指南
+├── DEPLOYMENT.md            # 部署指南
+├── ONLINE_DEPLOYMENT.md     # 线上部署指南
+└── TESTING_GUIDE.md         # 测试指南
 ```
 
 ## 快速开始
@@ -258,7 +273,9 @@ Response: { "success": true, "message": "...", "url": "..." }
 - **本地开发**：详细的本地开发和调试指南请参考 [LOCAL_DEV.md](./LOCAL_DEV.md)
 - **快速测试**：快速测试步骤请参考 [QUICK_START.md](./QUICK_START.md)
 - **本地部署**：本地服务部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)
-- **线上部署**：生产环境线上部署方案请参考 [ONLINE_DEPLOYMENT.md](./ONLINE_DEPLOYMENT.md) ⭐
+- **线上部署**：
+  - ⭐ **快速部署**：快速上线指南请参考 [DEPLOY_QUICK_GUIDE.md](./DEPLOY_QUICK_GUIDE.md)（推荐新手）
+  - **详细方案**：完整的生产环境部署方案请参考 [ONLINE_DEPLOYMENT.md](./ONLINE_DEPLOYMENT.md)
 
 ## 更新日志
 
