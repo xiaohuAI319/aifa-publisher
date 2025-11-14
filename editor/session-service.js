@@ -265,3 +265,99 @@ export async function publishToXiaohongshu(taskPayload) {
     throw error;
   }
 }
+
+// ==================== 发布历史管理 ====================
+
+const PUBLISH_HISTORY_KEY = 'aifa_publish_history';
+const MAX_HISTORY_ITEMS = 100; // 最多保存100条历史记录
+
+/**
+ * 保存发布历史记录
+ * @param {Object} historyItem - 发布历史项
+ * @param {string} historyItem.platform - 发布平台（zhihu/xiaohongshu）
+ * @param {string} historyItem.title - 文章标题
+ * @param {string} historyItem.content - 文章内容（截取前200字符）
+ * @param {string} historyItem.url - 发布后的URL
+ * @param {string} historyItem.accountId - 账号ID
+ * @param {string} historyItem.accountName - 账号名称
+ * @param {string} historyItem.status - 发布状态（success/failed）
+ * @param {string} historyItem.message - 发布消息
+ */
+export function savePublishHistory(historyItem) {
+  try {
+    const history = getPublishHistory();
+    
+    // 添加时间戳和ID
+    const newItem = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      ...historyItem
+    };
+    
+    // 添加到数组开头
+    history.unshift(newItem);
+    
+    // 限制历史记录数量
+    if (history.length > MAX_HISTORY_ITEMS) {
+      history.splice(MAX_HISTORY_ITEMS);
+    }
+    
+    // 保存到localStorage
+    localStorage.setItem(PUBLISH_HISTORY_KEY, JSON.stringify(history));
+    
+    console.log('[session-service] 发布历史已保存:', newItem.id);
+    return newItem;
+  } catch (error) {
+    console.error('[session-service] 保存发布历史失败:', error.message);
+    // 即使保存失败也不影响发布流程
+    return null;
+  }
+}
+
+/**
+ * 获取所有发布历史记录
+ * @returns {Array} 发布历史记录数组
+ */
+export function getPublishHistory() {
+  try {
+    const historyJson = localStorage.getItem(PUBLISH_HISTORY_KEY);
+    if (!historyJson) {
+      return [];
+    }
+    return JSON.parse(historyJson);
+  } catch (error) {
+    console.error('[session-service] 读取发布历史失败:', error.message);
+    return [];
+  }
+}
+
+/**
+ * 删除指定的发布历史记录
+ * @param {string} historyId - 历史记录ID
+ * @returns {boolean} 是否删除成功
+ */
+export function deletePublishHistory(historyId) {
+  try {
+    const history = getPublishHistory();
+    const filtered = history.filter(item => item.id !== historyId);
+    localStorage.setItem(PUBLISH_HISTORY_KEY, JSON.stringify(filtered));
+    return true;
+  } catch (error) {
+    console.error('[session-service] 删除发布历史失败:', error.message);
+    return false;
+  }
+}
+
+/**
+ * 清空所有发布历史记录
+ * @returns {boolean} 是否清空成功
+ */
+export function clearPublishHistory() {
+  try {
+    localStorage.removeItem(PUBLISH_HISTORY_KEY);
+    return true;
+  } catch (error) {
+    console.error('[session-service] 清空发布历史失败:', error.message);
+    return false;
+  }
+}

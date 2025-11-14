@@ -490,7 +490,13 @@
   <div class="container">
     <div class="header">
       <h1>文章编辑 / 发布面板</h1>
-      <a class="download-link" href="./chrome-extension-guide.html" target="_blank" rel="noopener noreferrer">重要：Chrome 插件下载</a>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a class="download-link" href="./history.html" style="background: rgba(22, 119, 255, 0.08); border-color: rgba(22, 119, 255, 0.35); color: #1677ff;">
+          <span style="font-size: 16px;">📋</span>
+          发布历史
+        </a>
+        <a class="download-link" href="./chrome-extension-guide.html" target="_blank" rel="noopener noreferrer">重要：Chrome 插件下载</a>
+      </div>
     </div>
     <div class="workspace">
       <section class="panel editor-panel">
@@ -657,7 +663,8 @@
       getXiaohongshuLoginStatus,
       startXiaohongshuLoginSession,
       pollXiaohongshuLoginStatus,
-      publishToXiaohongshu
+      publishToXiaohongshu,
+      savePublishHistory
     } from './session-service.js';
 
     const EDITOR_ID = 'editor';
@@ -928,8 +935,27 @@
           const { status, url, error } = event.data;
           if (status === 'success') {
             alert('发布成功：' + (url || '已保存至知乎草稿箱'));
+            // 保存发布历史
+            try {
+              saveHistoryAfterPublish(task, {
+                success: true,
+                url: url || '',
+                message: '发布成功'
+              });
+            } catch (historyError) {
+              console.error('保存发布历史失败:', historyError);
+            }
           } else {
             alert('发布失败：' + (error || '未知错误'));
+            // 保存失败历史
+            try {
+              saveHistoryAfterPublish(task, {
+                success: false,
+                message: error || '发布失败'
+              });
+            } catch (historyError) {
+              console.error('保存失败历史失败:', historyError);
+            }
           }
           cleanup();
           return;
@@ -989,6 +1015,58 @@
       }, 10000);
     }
 
+    /**
+     * 保存发布历史记录
+     * @param {Object} task - 发布任务
+     * @param {Object} result - 发布结果
+     */
+    function saveHistoryAfterPublish(task, result) {
+      try {
+        const editorInstance = tinymce.get(EDITOR_ID);
+        let content = '';
+        if (editorInstance) {
+          if (isMarkdownMode && editorInstance.mode.get() === 'source') {
+            content = editorInstance.getContent({ format: 'text' });
+          } else {
+            content = editorInstance.getContent({ format: 'html' });
+          }
+        }
+        
+        // 截取内容前200字符作为预览
+        const contentPreview = content.length > 200 ? content.substring(0, 200) + '...' : content;
+        
+        // 获取账号名称
+        let accountName = '';
+        if (task.platform === 'xiaohongshu') {
+          const accountSelect = document.getElementById('xiaohongshuAccountSelect');
+          if (accountSelect) {
+            const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+            accountName = selectedOption ? selectedOption.text : task.payload.accountId;
+          }
+        } else if (task.platform === 'zhihu') {
+          const accountSelect = document.getElementById('zhihuAccountSelect');
+          if (accountSelect) {
+            const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+            accountName = selectedOption ? selectedOption.text : '默认账号';
+          }
+        }
+        
+        savePublishHistory({
+          platform: task.platform,
+          title: task.payload.title,
+          content: contentPreview,
+          url: result.url || '',
+          accountId: task.payload.accountId || '',
+          accountName: accountName,
+          status: result.success !== false ? 'success' : 'failed',
+          message: result.message || ''
+        });
+      } catch (error) {
+        console.error('保存发布历史失败:', error);
+        // 不影响发布流程
+      }
+    }
+
     document.getElementById('publishBtn').addEventListener('click', async () => {
       try {
         const task = createTaskPayload();
@@ -996,7 +1074,11 @@
 
         if (platform === 'xiaohongshu') {
           // 小红书：调用本地Node.js服务
-          await publishToXiaohongshu(task);
+          const result = await publishToXiaohongshu(task);
+          // 保存发布历史
+          saveHistoryAfterPublish(task, result);
+          // 显示成功提示
+          alert(result.message || '发布成功！');
         } else {
           // 知乎：使用Chrome扩展（原有逻辑）
           const targetWindow = openZhihuWritePage();
@@ -1005,6 +1087,17 @@
       } catch (error) {
         console.error('发布失败:', error);
         alert('发布失败：' + (error.message || '未知错误'));
+        
+        // 即使发布失败也尝试保存历史（用于记录失败原因）
+        try {
+          const task = createTaskPayload();
+          saveHistoryAfterPublish(task, {
+            success: false,
+            message: error.message || '发布失败'
+          });
+        } catch (historyError) {
+          console.error('保存失败历史失败:', historyError);
+        }
       }
     });
 

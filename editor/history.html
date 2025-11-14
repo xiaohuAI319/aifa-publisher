@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>发布历史 - AIFA Publisher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 40%);
+      color: #1f2329;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .back-link {
+      color: #1677ff;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid rgba(22, 119, 255, 0.35);
+      border-radius: 999px;
+      padding: 6px 16px;
+      background: rgba(22, 119, 255, 0.08);
+      transition: background 0.2s ease, border-color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .back-link:hover {
+      background: rgba(22, 119, 255, 0.16);
+      border-color: rgba(22, 119, 255, 0.55);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn {
+      border: 1px solid rgba(22, 119, 255, 0.35);
+      background: rgba(22, 119, 255, 0.08);
+      color: #1677ff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(22, 119, 255, 0.16);
+      border-color: rgba(22, 119, 255, 0.55);
+    }
+    .btn-danger {
+      border-color: rgba(212, 56, 13, 0.35);
+      background: rgba(212, 56, 13, 0.08);
+      color: #d4380d;
+    }
+    .btn-danger:hover {
+      background: rgba(212, 56, 13, 0.16);
+      border-color: rgba(212, 56, 13, 0.55);
+    }
+    .history-panel {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(15, 37, 64, 0.08);
+      border: 1px solid rgba(22, 119, 255, 0.08);
+      padding: 32px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #98a2b3;
+    }
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .empty-state-text {
+      font-size: 16px;
+      margin: 0;
+    }
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .history-item {
+      border: 1px solid rgba(22, 119, 255, 0.12);
+      border-radius: 12px;
+      padding: 20px;
+      background: #f7f9fc;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .history-item:hover {
+      border-color: rgba(22, 119, 255, 0.32);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(22, 119, 255, 0.08);
+    }
+    .history-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .history-item-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2329;
+      margin: 0;
+      flex: 1;
+    }
+    .history-item-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #98a2b3;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+    .delete-btn:hover {
+      color: #d4380d;
+    }
+    .history-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #4e5969;
+    }
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+    .platform-badge--zhihu {
+      background: linear-gradient(135deg, #2979ff, #1e5ad7);
+    }
+    .platform-badge--xiaohongshu {
+      background: linear-gradient(135deg, #ff2442, #ff6b9d);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-badge--success {
+      background: rgba(34, 197, 94, 0.12);
+      color: #166534;
+    }
+    .status-badge--failed {
+      background: rgba(212, 56, 13, 0.12);
+      color: #8a4b0b;
+    }
+    .history-item-content {
+      font-size: 14px;
+      color: #4e5969;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      max-height: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-item-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: #98a2b3;
+    }
+    .history-item-url {
+      color: #1677ff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .history-item-url:hover {
+      text-decoration: underline;
+    }
+    .history-item-url:disabled {
+      color: #98a2b3;
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .header h1 { font-size: 24px; }
+      .history-panel { padding: 20px; }
+      .history-item-header { flex-direction: column; }
+      .history-item-meta { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 发布历史</h1>
+      <div class="actions">
+        <a href="./index.html" class="back-link">← 返回编辑</a>
+        <button class="btn btn-danger" id="clearAllBtn">清空历史</button>
+      </div>
+    </div>
+    <div class="history-panel">
+      <ul class="history-list" id="historyList">
+        <!-- 历史记录将动态加载 -->
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      getPublishHistory,
+      deletePublishHistory,
+      clearPublishHistory
+    } from './session-service.js';
+
+    /**
+     * 格式化时间显示
+     * @param {string} timestamp - ISO时间戳
+     * @returns {string} 格式化后的时间字符串
+     */
+    function formatTime(timestamp) {
+      try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        
+        // 小于1分钟
+        if (diff < 60000) {
+          return '刚刚';
+        }
+        // 小于1小时
+        if (diff < 3600000) {
+          return `${Math.floor(diff / 60000)}分钟前`;
+        }
+        // 小于24小时
+        if (diff < 86400000) {
+          return `${Math.floor(diff / 3600000)}小时前`;
+        }
+        // 小于7天
+        if (diff < 604800000) {
+          return `${Math.floor(diff / 86400000)}天前`;
+        }
+        
+        // 超过7天，显示具体日期
+        return date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        return '未知时间';
+      }
+    }
+
+    /**
+     * 获取平台显示名称
+     * @param {string} platform - 平台ID
+     * @returns {string} 平台显示名称
+     */
+    function getPlatformName(platform) {
+      const platformMap = {
+        'zhihu': '知乎',
+        'xiaohongshu': '小红书'
+      };
+      return platformMap[platform] || platform;
+    }
+
+    /**
+     * 渲染历史记录列表
+     */
+    function renderHistoryList() {
+      const historyList = document.getElementById('historyList');
+      const history = getPublishHistory();
+      
+      if (history.length === 0) {
+        historyList.innerHTML = `
+          <li class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p class="empty-state-text">暂无发布历史记录</p>
+          </li>
+        `;
+        return;
+      }
+      
+      historyList.innerHTML = history.map(item => {
+        const platformName = getPlatformName(item.platform);
+        const statusText = item.status === 'success' ? '成功' : '失败';
+        const statusClass = item.status === 'success' ? 'success' : 'failed';
+        const timeText = formatTime(item.timestamp);
+        const accountInfo = item.accountName ? ` · ${item.accountName}` : '';
+        
+        return `
+          <li class="history-item">
+            <div class="history-item-header">
+              <h3 class="history-item-title">${escapeHtml(item.title || '无标题')}</h3>
+              <div class="history-item-actions">
+                <button class="delete-btn" data-id="${item.id}" title="删除">🗑️</button>
+              </div>
+            </div>
+            <div class="history-item-meta">
+              <span class="platform-badge platform-badge--${item.platform}">${platformName}</span>
+              <span class="status-badge status-badge--${statusClass}">${statusText}</span>
+              <span>${timeText}${accountInfo}</span>
+            </div>
+            ${item.content ? `<div class="history-item-content">${escapeHtml(item.content)}</div>` : ''}
+            <div class="history-item-footer">
+              <span>${item.message || ''}</span>
+              ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="history-item-url">查看 →</a>` : '<span class="history-item-url" style="color: #98a2b3;">无链接</span>'}
+            </div>
+          </li>
+        `;
+      }).join('');
+      
+      // 绑定删除按钮事件
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          if (confirm('确定要删除这条历史记录吗？')) {
+            if (deletePublishHistory(id)) {
+              renderHistoryList();
+            } else {
+              alert('删除失败，请重试');
+            }
+          }
+        });
+      });
+    }
+
+    /**
+     * HTML转义函数
+     * @param {string} text - 需要转义的文本
+     * @returns {string} 转义后的文本
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 清空历史按钮事件
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      if (confirm('确定要清空所有发布历史记录吗？此操作不可恢复。')) {
+        if (clearPublishHistory()) {
+          renderHistoryList();
+          alert('已清空所有历史记录');
+        } else {
+          alert('清空失败，请重试');
+        }
+      }
+    });
+
+    // 初始化加载历史记录
+    renderHistoryList();
+  </script>
+</body>
+</html>
+
